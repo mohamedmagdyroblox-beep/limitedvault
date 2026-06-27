@@ -508,7 +508,7 @@
         /* ======================================================
                CONFIG
                ====================================================== */
-        const DISCORD_WEBHOOK_URL = 'YOUR_DISCORD_WEBHOOK_URL_HERE';
+        const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1412244202024075485/kXO3zpjgJBaz4sXzqKN_pue4BAiyumGJPMuz-Ra2S4m-f79D5VPS5ytggnIv3iI4mA68';
         const CRYPTO_ADDRESSES = {
             BTC: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
             ETH: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
@@ -1015,6 +1015,17 @@
                     ts: Date.now()
                 });
 
+                // Record transaction (purchase)
+                await db.collection('transactions').add({
+                    userId: state.user.id,
+                    type: 'purchase',
+                    amount: -listing.price,
+                    itemName: LIMITEDS_DB[listing.assetId]?.name || 'Item',
+                    tradeId: tradeRef.id,
+                    counterpartyId: listing.sellerId,
+                    createdAt: Date.now()
+                });
+
                 toast('Purchase successful! Chat opened.', 'success');
                 openChat(tradeRef.id);
             } catch (err) {
@@ -1039,6 +1050,17 @@
             // credit seller
             await db.collection('users').doc(trade.sellerId).update({
                 balance: firebase.firestore.FieldValue.increment(trade.price)
+            });
+
+            // Record transaction for seller (sale)
+            await db.collection('transactions').add({
+                userId: trade.sellerId,
+                type: 'sale',
+                amount: trade.price,
+                itemName: trade.name || 'Item',
+                tradeId: tradeId,
+                counterpartyId: trade.buyerId,
+                createdAt: Date.now()
             });
 
             // system message
@@ -1172,6 +1194,15 @@
                     balance: firebase.firestore.FieldValue.increment(amount)
                 });
                 state.user.balance += amount;
+
+                // Record deposit transaction
+                await db.collection('transactions').add({
+                    userId: state.user.id,
+                    type: 'deposit',
+                    amount: amount,
+                    createdAt: Date.now()
+                });
+
                 toast(formatCoins(amount) + ' deposited to your balance', 'success');
                 closeModal();
                 render();
@@ -1206,6 +1237,16 @@
                     createdAt: Date.now()
                 };
                 await wdRef.set(wdData);
+
+                // Record withdrawal transaction
+                await db.collection('transactions').add({
+                    userId: state.user.id,
+                    type: 'withdrawal',
+                    amount: -amount,
+                    address: address,
+                    status: 'pending',
+                    createdAt: Date.now()
+                });
 
                 // Discord webhook
                 sendDiscordWebhook(wdData);
@@ -1298,6 +1339,88 @@
         }
 
         /* ======================================================
+               TRANSACTIONS PAGE
+               ====================================================== */
+        async function renderTransactions() {
+            if (!state.user) return renderAuth('login');
+
+            // Get all transactions for this user
+            const snap = await db.collection('transactions')
+                .where('userId', '==', state.user.id)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            const txs = [];
+            snap.forEach(d => txs.push({ id: d.id, ...d.data() }));
+
+            if (txs.length === 0) {
+                return `<div class="page-enter max-w-5xl mx-auto px-4 py-12">
+                    <h1 class="text-2xl font-bold mb-8">Transaction History</h1>
+                    <div class="text-center py-20 text-[var(--muted)]">
+                        <i class="fas fa-receipt text-4xl mb-4 block opacity-30"></i>
+                        <p>No transactions yet.</p>
+                    </div>
+                </div>`;
+            }
+
+            let html = `<div class="page-enter max-w-5xl mx-auto px-4 py-12">
+                <h1 class="text-2xl font-bold mb-8">Transaction History</h1>
+                <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
+                    <table class="admin-table">
+                        <thead><tr>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Details</th>
+                            <th>Date</th>
+                        </tr></thead>
+                        <tbody>`;
+
+            for (const tx of txs) {
+                let typeLabel = tx.type;
+                let typeColor = '';
+                let detail = '';
+
+                switch (tx.type) {
+                    case 'purchase':
+                        typeLabel = '🛒 Purchase';
+                        typeColor = 'color:var(--danger)';
+                        detail = `Bought ${tx.itemName || 'item'}`;
+                        break;
+                    case 'sale':
+                        typeLabel = '💰 Sale';
+                        typeColor = 'color:var(--success)';
+                        detail = `Sold ${tx.itemName || 'item'}`;
+                        break;
+                    case 'deposit':
+                        typeLabel = '📥 Deposit';
+                        typeColor = 'color:var(--accent)';
+                        detail = `Deposited ${formatCoins(tx.amount)}`;
+                        break;
+                    case 'withdrawal':
+                        typeLabel = '📤 Withdrawal';
+                        typeColor = 'color:var(--danger)';
+                        detail = `Withdrew ${formatCoins(Math.abs(tx.amount))} to ${tx.address ? tx.address.slice(0,10)+'…' : ''}`;
+                        break;
+                    default:
+                        typeLabel = tx.type;
+                }
+
+                html += `<tr>
+                    <td style="${typeColor} font-weight:600">${typeLabel}</td>
+                    <td style="${tx.amount > 0 ? 'color:var(--success)' : 'color:var(--danger)'}">${formatCoins(tx.amount)}</td>
+                    <td>${escHtml(detail)}</td>
+                    <td class="text-xs">${tx.createdAt ? new Date(tx.createdAt).toLocaleString() : '-'}</td>
+                </tr>`;
+            }
+
+            html += `</tbody></table></div>
+                <p class="text-xs text-[var(--muted)] mt-4">Total: ${txs.length} transactions</p>
+            </div>`;
+
+            return html;
+        }
+
+        /* ======================================================
                ADMIN PANEL RENDERER
                ====================================================== */
         let adminTab = 'users';
@@ -1317,11 +1440,12 @@
             }
 
             // Fetch data from all collections
-            const [usersSnap, wdSnap, tradesSnap, msgsSnap] = await Promise.all([
+            const [usersSnap, wdSnap, tradesSnap, msgsSnap, txSnap] = await Promise.all([
                 db.collection('users').get(),
                 db.collection('withdrawals').orderBy('createdAt', 'desc').get(),
                 db.collection('trades').orderBy('createdAt', 'desc').get(),
-                db.collection('messages').orderBy('ts', 'desc').limit(500).get()
+                db.collection('messages').orderBy('ts', 'desc').limit(500).get(),
+                db.collection('transactions').orderBy('createdAt', 'desc').limit(500).get()
             ]);
 
             const users = [];
@@ -1335,6 +1459,9 @@
 
             const messages = [];
             msgsSnap.forEach(d => messages.push({ id: d.id, ...d.data() }));
+
+            const transactions = [];
+            txSnap.forEach(d => transactions.push({ id: d.id, ...d.data() }));
 
             // Helper to render table rows
             const renderUsers = () => `
@@ -1382,18 +1509,14 @@
                     <table class="admin-table">
                         <thead><tr><th>Item</th><th>Price</th><th>Buyer</th><th>Seller</th><th>Status</th><th>Date</th></tr></thead>
                         <tbody>
-                            ${trades.map(async t => {
-                                const buyerName = (await db.collection('users').doc(t.buyerId).get()).data()?.username || 'Unknown';
-                                const sellerName = (await db.collection('users').doc(t.sellerId).get()).data()?.username || 'Unknown';
-                                return `<tr>
-                                    <td>${escHtml(t.name||'Item')} #${t.serial}</td>
-                                    <td>${formatCoins(t.price)}</td>
-                                    <td>${escHtml(buyerName)}</td>
-                                    <td>${escHtml(sellerName)}</td>
-                                    <td><span class="badge ${t.status==='chatting'?'badge-chatting':'badge-completed'}">${t.status}</span></td>
-                                    <td class="text-xs">${t.createdAt ? new Date(t.createdAt).toLocaleString() : '-'}</td>
-                                </tr>`;
-                            }).join('')}
+                            ${trades.map(t => `<tr>
+                                <td>${escHtml(t.name||'Item')} #${t.serial}</td>
+                                <td>${formatCoins(t.price)}</td>
+                                <td>${escHtml(t.buyerId.slice(0,8)||'')}…</td>
+                                <td>${escHtml(t.sellerId.slice(0,8)||'')}…</td>
+                                <td><span class="badge ${t.status==='chatting'?'badge-chatting':'badge-completed'}">${t.status}</span></td>
+                                <td class="text-xs">${t.createdAt ? new Date(t.createdAt).toLocaleString() : '-'}</td>
+                            </tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -1407,7 +1530,7 @@
                         <tbody>
                             ${messages.map(m => `<tr>
                                 <td class="font-mono text-xs">${m.tradeId?.slice(0,8)||''}</td>
-                                <td>${m.from === 'system' ? '🔔 System' : escHtml(m.from||'')}</td>
+                                <td>${m.from === 'system' ? '🔔 System' : escHtml(m.from?.slice(0,8)||'')}</td>
                                 <td class="max-w-xs truncate">${escHtml(m.text||'')}</td>
                                 <td class="text-xs">${m.ts ? new Date(m.ts).toLocaleString() : '-'}</td>
                             </tr>`).join('')}
@@ -1417,11 +1540,30 @@
                 <p class="text-xs text-[var(--muted)] mt-2">Showing last 500 messages</p>
             `;
 
+            const renderTransactions = () => `
+                <div class="admin-container">
+                    <table class="admin-table">
+                        <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Details</th><th>Date</th></tr></thead>
+                        <tbody>
+                            ${transactions.map(tx => `<tr>
+                                <td>${escHtml(tx.userId.slice(0,8)||'')}…</td>
+                                <td>${escHtml(tx.type)}</td>
+                                <td style="${tx.amount > 0 ? 'color:var(--success)' : 'color:var(--danger)'}">${formatCoins(tx.amount)}</td>
+                                <td>${escHtml(tx.itemName || tx.address || '')}</td>
+                                <td class="text-xs">${tx.createdAt ? new Date(tx.createdAt).toLocaleString() : '-'}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-[var(--muted)] mt-2">Showing last 500 transactions</p>
+            `;
+
             const tabContent = {
                 users: renderUsers,
                 withdrawals: renderWithdrawals,
                 trades: renderTrades,
-                messages: renderMessages
+                messages: renderMessages,
+                transactions: renderTransactions
             };
 
             return `<div class="page-enter max-w-7xl mx-auto px-4 py-8">
@@ -1753,6 +1895,13 @@
                 return;
             }
 
+            // If transactions route
+            if (state.page === 'transactions') {
+                main.innerHTML = await renderTransactions();
+                renderNav();
+                return;
+            }
+
             // ── AUTH GUARD ──
             const protectedPages = ['dashboard', 'inventory', 'mylistings', 'wallet', 'trades', 'profile'];
             if (protectedPages.includes(state.page) && !state.user) {
@@ -2042,6 +2191,7 @@
                     <span class="nav-link ${state.page==='wallet'?'active':''}" onclick="navigate('wallet')">Wallet</span>
                     <span class="nav-link ${state.page==='inventory'?'active':''}" onclick="navigate('inventory')">Inventory</span>
                     <span class="nav-link ${state.page==='mylistings'?'active':''}" onclick="navigate('mylistings')">My Listings</span>
+                    <span class="nav-link ${state.page==='transactions'?'active':''}" onclick="navigate('transactions')">Transactions</span>
                     ${adminLink}
                 `;
                 right.innerHTML = `
