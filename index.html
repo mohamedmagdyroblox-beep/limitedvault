@@ -763,25 +763,10 @@
             }
         }
 
-        // Listen to user doc changes
-        function listenUser(cb) {
-            if (!state.user) return null;
-            return db.collection('users').doc(state.user.id).onSnapshot((snap) => {
-                if (snap.exists) {
-                    const data = snap.data();
-                    state.user = { id: snap.id, ...data };
-                    if (cb) cb(state.user);
-                    render(); // refresh UI
-                }
-            }, (err) => {
-                console.error('User listener error:', err);
-            });
-        }
-
         /* ======================================================
-               ROBLOX VERIFICATION (Firestore)
+               ROBLOX VERIFICATION (REAL API)
                ====================================================== */
-        function startVerify(rbxF) {
+        async function startVerify(rbxF) {
             if (!rbxF.trim()) return toast('Enter your Roblox username', 'error');
             state.verifyUsername = rbxF.trim();
             state.verifyPhrase = generatePhrase();
@@ -791,39 +776,101 @@
 
         async function completeVerify() {
             if (!state.user) return toast('Not logged in', 'error');
-            // Simulated: in production a backend would scrape the Roblox profile bio
-            const ruid = Math.floor(10000000 + Math.random() * 90000000);
+            if (!state.verifyUsername) return toast('No username set', 'error');
 
-            await updateUser({
-                robloxUsername: state.verifyUsername,
-                robloxUserId: ruid,
-                verified: true
-            });
+            try {
+                // 1) Get Roblox user ID from username
+                const userRes = await fetch(`https://api.roblox.com/users/get-by-username?username=${encodeURIComponent(state.verifyUsername)}`);
+                if (!userRes.ok) throw new Error('Failed to fetch Roblox user');
+                const userData = await userRes.json();
+                if (!userData || !userData.Id) throw new Error('User not found');
+                const robloxUserId = userData.Id;
 
-            // Assign random inventory (only if not already assigned)
-            const existing = await db.collection('inventory')
-                .where('userId', '==', state.user.id)
-                .get();
-            if (existing.empty) {
-                const count = 3 + Math.floor(Math.random() * 3);
-                const shuffled = [...LIMITED_IDS].sort(() => Math.random() - .5).slice(0, count);
+                // 2) Get user profile description (bio)
+                const profileRes = await fetch(`https://users.roblox.com/v1/users/${robloxUserId}`);
+                if (!profileRes.ok) throw new Error('Failed to fetch profile');
+                const profileData = await profileRes.json();
+                const bio = profileData.description || '';
+
+                // 3) Check if bio contains the phrase
+                if (!bio.includes(state.verifyPhrase)) {
+                    toast('Bio does not contain the phrase. Make sure you added it and your profile is public.', 'error');
+                    return;
+                }
+
+                // 4) Mark user as verified
+                await updateUser({
+                    robloxUsername: state.verifyUsername,
+                    robloxUserId: robloxUserId,
+                    verified: true
+                });
+
+                // 5) Fetch inventory from Rolimons and import
+                await importRolimonsInventory(robloxUserId);
+
+                state.verifyStep = 0;
+                toast('Roblox account verified! Inventory imported from Rolimons.', 'success');
+                navigate('inventory');
+            } catch (err) {
+                console.error('Verification error:', err);
+                toast(err.message || 'Verification failed', 'error');
+            }
+        }
+
+        async function importRolimonsInventory(robloxUserId) {
+            try {
+                // Fetch from Rolimons API
+                const res = await fetch(`https://www.rolimons.com/api/player/${robloxUserId}`);
+                if (!res.ok) throw new Error('Rolimons API error');
+                const data = await res.json();
+
+                // data is expected to have an "items" object { assetId: quantity, ... }
+                // We only care about asset IDs that exist in our LIMITEDS_DB
+                const roliItems = data.items || {};
+                const assetIds = Object.keys(roliItems).map(Number);
+
+                // Filter to only those in our DB
+                const validAssetIds = assetIds.filter(id => LIMITEDS_DB[id]);
+
+                if (validAssetIds.length === 0) {
+                    toast('No supported limiteds found in your inventory.', 'info');
+                    return;
+                }
+
+                // Get current inventory to avoid duplicates
+                const existingSnap = await db.collection('inventory')
+                    .where('userId', '==', state.user.id)
+                    .get();
+                const existingAssetIds = new Set();
+                existingSnap.forEach(doc => {
+                    existingAssetIds.add(doc.data().assetId);
+                });
+
                 const batch = db.batch();
-                for (const aid of shuffled) {
+                let addedCount = 0;
+                for (const assetId of validAssetIds) {
+                    if (existingAssetIds.has(assetId)) continue;
                     const ref = db.collection('inventory').doc();
                     batch.set(ref, {
                         userId: state.user.id,
-                        assetId: aid,
-                        serial: Math.floor(1000 + Math.random() * 30000),
+                        assetId: assetId,
+                        serial: Math.floor(1000 + Math.random() * 30000), // Rolimons doesn't provide serial, so generate random
                         listed: false,
                         listingId: null
                     });
+                    addedCount++;
                 }
-                await batch.commit();
-            }
 
-            state.verifyStep = 0;
-            toast('Roblox account verified!', 'success');
-            navigate('inventory');
+                if (addedCount > 0) {
+                    await batch.commit();
+                    toast(`Imported ${addedCount} new limiteds from Rolimons.`, 'success');
+                } else {
+                    toast('No new limiteds to import.', 'info');
+                }
+            } catch (err) {
+                console.error('Rolimons import error:', err);
+                toast('Could not import inventory from Rolimons.', 'error');
+            }
         }
 
         /* ======================================================
