@@ -187,30 +187,81 @@ function seedData() {
 }
 
 /* ===== AUTH ===== */
-function register(uname,email,pw) {
-    const users=getStore('users');
-    if(users.find(u=>u.username===uname)) return toast('Username already taken','error');
-    if(users.find(u=>u.email===email)) return toast('Email already registered','error');
-    if(pw.length<6) return toast('Password must be at least 6 characters','error');
-    const user={id:genId(),username:uname,email,password:pw,robloxUsername:'',robloxUserId:0,verified:false,balance:0,createdAt:Date.now()};
-    users.push(user); setStore('users',users);
-    state.user=user; toast('Account created successfully','success'); navigate('dashboard');
+async function register(uname, email, pw) {
+    if (pw.length < 6)
+        return toast('Password must be at least 6 characters', 'error');
+
+    try {
+        const credential = await window.createUserWithEmailAndPassword(
+            window.auth,
+            email,
+            pw
+        );
+
+        const user = {
+            id: credential.user.uid,
+            username: uname,
+            email: email,
+            robloxUsername: '',
+            robloxUserId: 0,
+            verified: false,
+            balance: 0,
+            createdAt: Date.now()
+        };
+
+        const users = getStore('users');
+        users.push(user);
+        setStore('users', users);
+
+        state.user = user;
+
+        toast('Account created successfully!', 'success');
+        navigate('dashboard');
+
+    } catch (error) {
+
+        if (error.code === "auth/email-already-in-use")
+            return toast("Email already registered", "error");
+
+        if (error.code === "auth/invalid-email")
+            return toast("Invalid email address", "error");
+
+        if (error.code === "auth/weak-password")
+            return toast("Password is too weak", "error");
+
+        toast(error.message, "error");
+    }
 }
+
 function login(email,pw) {
     const users=getStore('users');
     const user=users.find(u=>u.email===email&&u.password===pw);
     if(!user) return toast('Invalid email or password','error');
     state.user=user; toast('Welcome back, '+user.username,'success'); navigate('dashboard');
 }
-function logout() { state.user=null; state.chatTradeId=null; closeChat(); toast('Logged out','info'); navigate('home') }
+
+function logout() {
+    state.user=null;
+    state.chatTradeId=null;
+    closeChat();
+    toast('Logged out','info');
+    navigate('home');
+}
+
 function refreshUser() {
     if(!state.user) return;
-    const users=getStore('users'); const u=users.find(x=>x.id===state.user.id);
+    const users=getStore('users');
+    const u=users.find(x=>x.id===state.user.id);
     if(u) state.user=u;
 }
+
 function updateUser(updates) {
-    const users=getStore('users'); const i=users.findIndex(u=>u.id===state.user.id);
-    if(i<0) return; Object.assign(users[i],updates); setStore('users',users); state.user=users[i];
+    const users=getStore('users');
+    const i=users.findIndex(u=>u.id===state.user.id);
+    if(i<0) return;
+    Object.assign(users[i],updates);
+    setStore('users',users);
+    state.user=users[i];
 }
 
 /* ===== ROBLOX VERIFICATION ===== */
@@ -218,27 +269,42 @@ function startVerify(rbxF) {
     if(!rbxF.trim()) return toast('Enter your Roblox username','error');
     state.verifyUsername=rbxF.trim();
     state.verifyPhrase=generatePhrase();
-    state.verifyStep=1; render();
+    state.verifyStep=1;
+    render();
 }
+
 function completeVerify() {
-    /* Simulated: in production a backend would scrape the Roblox profile bio */
     const ruid=Math.floor(10000000+Math.random()*90000000);
-    updateUser({robloxUsername:state.verifyUsername,robloxUserId:ruid,verified:true});
-    /* Assign random inventory */
+    updateUser({
+        robloxUsername:state.verifyUsername,
+        robloxUserId:ruid,
+        verified:true
+    });
+
     const inv=getStore('inventory');
     const count=3+Math.floor(Math.random()*3);
     const shuffled=[...LIMITED_IDS].sort(()=>Math.random()-.5).slice(0,count);
+
     shuffled.forEach(aid=>{
-        inv.push({userId:state.user.id,assetId:aid,serial:Math.floor(1000+Math.random()*30000),listed:false});
+        inv.push({
+            userId:state.user.id,
+            assetId:aid,
+            serial:Math.floor(1000+Math.random()*30000),
+            listed:false
+        });
     });
+
     setStore('inventory',inv);
-    state.verifyStep=0; toast('Roblox account verified!','success'); navigate('inventory');
+    state.verifyStep=0;
+    toast('Roblox account verified!','success');
+    navigate('inventory');
 }
 
 /* ===== INVENTORY ===== */
 function getUserInventory() {
     return getStore('inventory').filter(i=>i.userId===state.user.id&&!i.listed);
 }
+
 function getUserListedInventory() {
     return getStore('inventory').filter(i=>i.userId===state.user.id&&i.listed);
 }
@@ -820,5 +886,19 @@ setInterval(()=>{
     if(state.chatTradeId) renderChat();
 },2000);
 </script>
-</body>
+<script type="module">
+import {
+    auth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from "./firebase.js";
+
+window.auth = auth;
+window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+window.signOut = signOut;
+window.onAuthStateChanged = onAuthStateChanged;
+</script></body>
 </html>
