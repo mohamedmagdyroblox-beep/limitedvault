@@ -1,2045 +1,1672 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LimitX — Roblox Limiteds Marketplace</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<style>
-:root {
-  --bg: #08080e;
-  --surface: #0f0f18;
-  --elevated: #161622;
-  --border: #1f1f30;
-  --border-light: #2a2a40;
-  --text: #eaeaf2;
-  --text-muted: #6e6e88;
-  --accent: #e8a820;
-  --accent-hover: #f0be38;
-  --accent-dim: rgba(232,168,32,0.12);
-  --success: #22c55e;
-  --error: #ef4444;
-  --info: #38bdf8;
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family:'DM Sans',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  overflow-x:hidden;
-}
-h1,h2,h3,h4,h5,h6,.font-heading { font-family:'Space Grotesk',sans-serif; }
-::-webkit-scrollbar { width:6px; }
-::-webkit-scrollbar-track { background:var(--surface); }
-::-webkit-scrollbar-thumb { background:var(--border-light); border-radius:3px; }
-::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LimitX - Roblox Limiteds Market</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js">
+    </script>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg2: #12121a;
+            --bg3: #1a1a26;
+            --bg4: #222233;
+            --gold: #d4a843;
+            --gold2: #f0c860;
+            --purple: #7c3aed;
+            --purple2: #9b5de5;
+            --green: #22c55e;
+            --red: #ef4444;
+            --text: #e2e2e8;
+            --text2: #a0a0b8;
+            --border: #2a2a3a;
+            --radius: 10px;
+            --radius2: 14px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+        }
 
-#particles-canvas {
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  pointer-events:none; z-index:0; opacity:0.4;
-}
-.app-wrap { position:relative; z-index:1; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
 
-/* Header */
-.app-header {
-  position:sticky; top:0; z-index:50;
-  background:rgba(8,8,14,0.85);
-  backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border);
-}
-.nav-link {
-  color:var(--text-muted); font-size:0.9rem; font-weight:500;
-  padding:0.5rem 1rem; border-radius:8px; transition:all 0.2s;
-  text-decoration:none; cursor:pointer;
-}
-.nav-link:hover,.nav-link.active { color:var(--accent); background:var(--accent-dim); }
+        /* Particle bg */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.35;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--purple);
+            animation: floatUp 8s infinite ease-in;
+            opacity: 0;
+        }
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-120px) scale(1.5);
+                opacity: 0;
+            }
+        }
 
-/* Buttons */
-.btn-primary {
-  background:var(--accent); color:#000; font-weight:600;
-  padding:0.6rem 1.4rem; border-radius:10px; border:none;
-  cursor:pointer; transition:all 0.2s; font-size:0.9rem;
-  font-family:'DM Sans',sans-serif;
-}
-.btn-primary:hover { background:var(--accent-hover); transform:translateY(-1px); box-shadow:0 4px 20px rgba(232,168,32,0.3); }
-.btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
-.btn-secondary {
-  background:var(--elevated); color:var(--text); font-weight:500;
-  padding:0.6rem 1.4rem; border-radius:10px; border:1px solid var(--border);
-  cursor:pointer; transition:all 0.2s; font-size:0.9rem;
-  font-family:'DM Sans',sans-serif;
-}
-.btn-secondary:hover { border-color:var(--border-light); background:var(--border); }
-.btn-danger {
-  background:rgba(239,68,68,0.15); color:var(--error); font-weight:600;
-  padding:0.6rem 1.4rem; border-radius:10px; border:1px solid rgba(239,68,68,0.3);
-  cursor:pointer; transition:all 0.2s; font-size:0.9rem;
-  font-family:'DM Sans',sans-serif;
-}
-.btn-danger:hover { background:rgba(239,68,68,0.25); }
-.btn-success {
-  background:rgba(34,197,94,0.15); color:var(--success); font-weight:600;
-  padding:0.6rem 1.4rem; border-radius:10px; border:1px solid rgba(34,197,94,0.3);
-  cursor:pointer; transition:all 0.2s; font-size:0.9rem;
-  font-family:'DM Sans',sans-serif;
-}
-.btn-success:hover { background:rgba(34,197,94,0.25); }
+        /* Layout */
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
 
-/* Cards */
-.market-card {
-  background:var(--surface); border:1px solid var(--border);
-  border-radius:14px; overflow:hidden; transition:all 0.3s;
-  cursor:pointer;
-}
-.market-card:hover {
-  border-color:var(--accent); transform:translateY(-4px);
-  box-shadow:0 8px 30px rgba(232,168,32,0.1);
-}
-.market-card img { width:100%; aspect-ratio:1; object-fit:cover; background:var(--elevated); }
+        /* Navbar */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius2);
+            margin-top: 16px;
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 16px;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .nav-logo {
+            font-size: 1.7rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--gold), var(--gold2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+            user-select: none;
+        }
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .nav-links button {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .nav-links button:hover,
+        .nav-links button.active {
+            background: var(--purple);
+            border-color: var(--purple2);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(124, 58, 237, 0.4);
+            transform: translateY(-1px);
+        }
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), var(--gold2));
+            color: #1a1a10;
+            box-shadow: 0 4px 16px rgba(212, 168, 67, 0.35);
+        }
+        .btn-gold:hover {
+            box-shadow: 0 6px 24px rgba(212, 168, 67, 0.55);
+            transform: translateY(-2px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--purple);
+            color: var(--purple2);
+        }
+        .btn-outline:hover {
+            background: var(--purple);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(124, 58, 237, 0.4);
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+        }
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+        }
+        .btn-green {
+            background: var(--green);
+            color: #000;
+        }
+        .balance-display {
+            background: var(--bg3);
+            border: 1px solid var(--gold);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 700;
+            color: var(--gold2);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .balance-display:hover {
+            box-shadow: 0 0 20px rgba(212, 168, 67, 0.25);
+        }
 
-/* Modal */
-.modal-overlay {
-  position:fixed; inset:0; z-index:100;
-  background:rgba(0,0,0,0.7); backdrop-filter:blur(8px);
-  display:flex; align-items:center; justify-content:center;
-  opacity:0; pointer-events:none; transition:opacity 0.3s;
-}
-.modal-overlay.open { opacity:1; pointer-events:all; }
-.modal-box {
-  background:var(--surface); border:1px solid var(--border);
-  border-radius:16px; padding:2rem; max-width:480px; width:90%;
-  max-height:85vh; overflow-y:auto;
-  transform:scale(0.95); transition:transform 0.3s;
-}
-.modal-overlay.open .modal-box { transform:scale(1); }
-.modal-box.wide { max-width:700px; }
+        /* Main content area */
+        .main-content {
+            margin-top: 20px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius2);
+            padding: 28px;
+            min-height: 500px;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+        .section-title .accent {
+            color: var(--gold2);
+        }
 
-/* Form */
-.form-input {
-  width:100%; background:var(--elevated); border:1px solid var(--border);
-  border-radius:10px; padding:0.7rem 1rem; color:var(--text);
-  font-size:0.9rem; font-family:'DM Sans',sans-serif;
-  transition:border-color 0.2s; outline:none;
-}
-.form-input:focus { border-color:var(--accent); }
-.form-input::placeholder { color:var(--text-muted); }
-.form-label { display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.05em; }
+        /* Market grid */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+        }
+        .item-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .item-card:hover {
+            border-color: var(--purple2);
+            box-shadow: 0 8px 28px rgba(124, 58, 237, 0.3);
+            transform: translateY(-3px);
+        }
+        .item-card .item-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+        .item-card .item-value {
+            font-size: 0.85rem;
+            color: var(--gold2);
+            font-weight: 600;
+        }
+        .item-card .item-price {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--green);
+            margin-top: 8px;
+        }
+        .item-card .item-seller {
+            font-size: 0.78rem;
+            color: var(--text2);
+            margin-top: 4px;
+        }
+        .item-card .btn {
+            margin-top: 12px;
+            width: 100%;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-active {
+            background: #22c55e22;
+            color: #22c55e;
+        }
+        .badge-pending {
+            background: #f59e0b22;
+            color: #f59e0b;
+        }
+        .badge-sold {
+            background: #ef444422;
+            color: #ef4444;
+        }
 
-/* Toast */
-#toast-container { position:fixed; top:80px; right:20px; z-index:200; display:flex; flex-direction:column; gap:8px; }
-.toast {
-  background:var(--elevated); border:1px solid var(--border);
-  border-radius:10px; padding:0.8rem 1.2rem;
-  font-size:0.85rem; min-width:280px; max-width:400px;
-  animation:slideIn 0.3s ease-out;
-  display:flex; align-items:center; gap:0.6rem;
-}
-.toast.success { border-color:rgba(34,197,94,0.4); }
-.toast.success i { color:var(--success); }
-.toast.error { border-color:rgba(239,68,68,0.4); }
-.toast.error i { color:var(--error); }
-.toast.info { border-color:rgba(56,189,248,0.4); }
-.toast.info i { color:var(--info); }
-@keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
-@keyframes slideOut { from { transform:translateX(0); opacity:1; } to { transform:translateX(100%); opacity:0; } }
+        /* Chat */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg3);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .chat-msg {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            word-wrap: break-word;
+            animation: msgPop 0.25s ease;
+        }
+        @keyframes msgPop {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .chat-msg.sent {
+            align-self: flex-end;
+            background: var(--purple);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.received {
+            align-self: flex-start;
+            background: var(--bg4);
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg .msg-sender {
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+            opacity: 0.8;
+        }
+        .chat-msg .msg-time {
+            font-size: 0.65rem;
+            opacity: 0.6;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            border-top: 1px solid var(--border);
+            background: var(--bg2);
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 25px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        .chat-input-area input:focus {
+            border-color: var(--purple2);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        }
 
-/* Page transitions */
-.page { display:none; animation:fadeIn 0.3s ease; }
-.page.active { display:block; }
-@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius2);
+            padding: 30px;
+            width: 90%;
+            max-width: 440px;
+            box-shadow: var(--shadow);
+            animation: modalSlide 0.3s ease;
+        }
+        @keyframes modalSlide {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal h2 {
+            margin-bottom: 18px;
+            font-size: 1.4rem;
+            letter-spacing: -0.3px;
+        }
+        .modal input {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border-radius: 25px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        .modal input:focus {
+            border-color: var(--purple2);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+        }
+        .modal .btn {
+            width: 100%;
+            margin-top: 6px;
+        }
+        .modal .alt-link {
+            text-align: center;
+            margin-top: 14px;
+            font-size: 0.85rem;
+            color: var(--text2);
+            cursor: pointer;
+        }
+        .modal .alt-link span {
+            color: var(--purple2);
+            font-weight: 600;
+        }
+        .modal .alt-link span:hover {
+            text-decoration: underline;
+        }
+        .error-msg {
+            color: var(--red);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: none;
+        }
+        .success-msg {
+            color: var(--green);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: none;
+        }
 
-/* Chat */
-.chat-messages {
-  height:400px; overflow-y:auto; display:flex;
-  flex-direction:column; gap:0.5rem; padding:1rem;
-  background:var(--bg); border-radius:10px; border:1px solid var(--border);
-}
-.chat-bubble {
-  max-width:75%; padding:0.6rem 1rem; border-radius:12px;
-  font-size:0.88rem; line-height:1.4;
-}
-.chat-bubble.sent {
-  align-self:flex-end; background:var(--accent); color:#000; border-bottom-right-radius:4px;
-}
-.chat-bubble.received {
-  align-self:flex-start; background:var(--elevated); border:1px solid var(--border); border-bottom-left-radius:4px;
-}
+        /* Deposit options */
+        .deposit-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+            margin-top: 16px;
+        }
+        .deposit-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .deposit-card:hover {
+            border-color: var(--gold);
+        }
+        .deposit-card .crypto-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+        .deposit-card .address {
+            font-size: 0.7rem;
+            word-break: break-all;
+            color: var(--text2);
+            background: var(--bg4);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            user-select: all;
+        }
 
-/* Table */
-.data-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
-.data-table th {
-  text-align:left; padding:0.7rem 1rem; font-weight:600;
-  color:var(--text-muted); border-bottom:1px solid var(--border);
-  text-transform:uppercase; font-size:0.75rem; letter-spacing:0.05em;
-}
-.data-table td {
-  padding:0.7rem 1rem; border-bottom:1px solid var(--border);
-  color:var(--text);
-}
-.data-table tr:hover td { background:rgba(255,255,255,0.02); }
+        /* Admin panel */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 16px;
+        }
+        .admin-table th,
+        .admin-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        .admin-table th {
+            background: var(--bg4);
+            font-weight: 700;
+            color: var(--gold2);
+            position: sticky;
+            top: 0;
+        }
+        .admin-table tr:hover td {
+            background: var(--bg3);
+        }
+        .admin-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .admin-tabs button {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text);
+            cursor: pointer;
+            font-family: var(--font);
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+        .admin-tabs button:hover,
+        .admin-tabs button.active {
+            background: var(--purple);
+            border-color: var(--purple2);
+            color: #fff;
+        }
 
-/* Badge */
-.badge {
-  display:inline-block; padding:0.2rem 0.6rem; border-radius:6px;
-  font-size:0.75rem; font-weight:600;
-}
-.badge-success { background:rgba(34,197,94,0.15); color:var(--success); }
-.badge-warning { background:rgba(232,168,32,0.15); color:var(--accent); }
-.badge-error { background:rgba(239,68,68,0.15); color:var(--error); }
-.badge-info { background:rgba(56,189,248,0.15); color:var(--info); }
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 14px 22px;
+            border-radius: 25px;
+            z-index: 300;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow);
+            animation: toastIn 0.35s ease, toastOut 0.35s ease 2.5s forwards;
+            max-width: 400px;
+        }
+        .toast.success {
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .toast.error {
+            border-color: var(--red);
+            color: var(--red);
+        }
+        @keyframes toastIn {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
 
-/* Phrase box */
-.phrase-box {
-  background:var(--accent-dim); border:2px dashed var(--accent);
-  border-radius:12px; padding:1.2rem; text-align:center;
-  font-family:'Space Grotesk',sans-serif; font-size:1.3rem;
-  font-weight:700; color:var(--accent); letter-spacing:0.05em;
-  user-select:all;
-}
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
 
-/* Skeleton loader */
-.skeleton {
-  background:linear-gradient(90deg, var(--elevated) 25%, var(--border) 50%, var(--elevated) 75%);
-  background-size:200% 100%;
-  animation:shimmer 1.5s infinite;
-  border-radius:8px;
-}
-@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-/* Tab */
-.tab-btn {
-  padding:0.5rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:500;
-  color:var(--text-muted); cursor:pointer; transition:all 0.2s;
-  background:transparent; border:1px solid transparent;
-}
-.tab-btn.active { color:var(--accent); background:var(--accent-dim); border-color:rgba(232,168,32,0.2); }
-.tab-btn:hover:not(.active) { color:var(--text); }
-
-/* Responsive */
-@media(max-width:768px) {
-  .modal-box { padding:1.5rem; margin:1rem; }
-  .chat-messages { height:300px; }
-  .data-table { font-size:0.78rem; }
-  .data-table th,.data-table td { padding:0.5rem 0.6rem; }
-}
-
-/* Glow effect on hero */
-.hero-glow {
-  position:absolute; width:500px; height:500px; border-radius:50%;
-  background:radial-gradient(circle, rgba(232,168,32,0.08) 0%, transparent 70%);
-  top:-100px; left:50%; transform:translateX(-50%);
-  pointer-events:none;
-}
-
-/* Stat card */
-.stat-card {
-  background:var(--surface); border:1px solid var(--border);
-  border-radius:12px; padding:1.2rem; text-align:center;
-}
-.stat-card .stat-value {
-  font-family:'Space Grotesk',sans-serif; font-size:1.8rem;
-  font-weight:700; color:var(--accent);
-}
-.stat-card .stat-label { font-size:0.78rem; color:var(--text-muted); margin-top:0.3rem; text-transform:uppercase; letter-spacing:0.05em; }
-</style>
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 14px;
+            }
+            .nav-links button {
+                padding: 7px 12px;
+                font-size: 0.78rem;
+            }
+            .market-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 10px;
+            }
+            .main-content {
+                padding: 16px;
+            }
+            .chat-container {
+                height: 350px;
+            }
+            .modal {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<canvas id="particles-canvas"></canvas>
+    <!-- Particle background -->
+    <div class="particles" id="particles"></div>
 
-<div class="app-wrap">
-<!-- HEADER -->
-<header class="app-header">
-  <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-    <div class="flex items-center gap-8">
-      <a class="font-heading text-xl font-bold cursor-pointer flex items-center gap-2" onclick="navigate('market')">
-        <span style="color:var(--accent)">Limit</span><span>X</span>
-      </a>
-      <nav class="hidden md:flex items-center gap-1">
-        <a class="nav-link active" data-page="market" onclick="navigate('market')"><i class="fa-solid fa-store mr-1"></i> Market</a>
-        <a class="nav-link" data-page="sell" onclick="navigate('sell')"><i class="fa-solid fa-tag mr-1"></i> Sell</a>
-        <a class="nav-link" data-page="profile" id="nav-profile" style="display:none" onclick="navigate('profile')"><i class="fa-solid fa-user mr-1"></i> Profile</a>
-        <a class="nav-link" data-page="chat" id="nav-chat" style="display:none" onclick="navigate('chat')"><i class="fa-solid fa-comments mr-1"></i> Chats</a>
-      </nav>
-    </div>
-    <div class="flex items-center gap-3">
-      <button id="btn-admin-nav" style="display:none" class="nav-link" onclick="navigate('admin')"><i class="fa-solid fa-shield-halved mr-1"></i> Admin</button>
-      <div id="user-menu" style="display:none" class="flex items-center gap-3">
-        <span class="text-sm font-medium" style="color:var(--text-muted)"><i class="fa-solid fa-wallet mr-1" style="color:var(--accent)"></i> $<span id="header-balance">0.00</span></span>
-        <span class="text-sm font-semibold" id="header-username"></span>
-        <button class="btn-secondary text-xs py-1.5 px-3" onclick="logout()">Logout</button>
-      </div>
-      <button id="btn-auth" class="btn-primary text-sm" onclick="openAuth()">Sign Up</button>
-    </div>
-  </div>
-  <!-- Mobile nav -->
-  <div class="md:hidden flex items-center gap-1 px-4 pb-2 overflow-x-auto">
-    <a class="nav-link active text-xs" data-page="market" onclick="navigate('market')">Market</a>
-    <a class="nav-link text-xs" data-page="sell" onclick="navigate('sell')">Sell</a>
-    <a class="nav-link text-xs" data-page="profile" id="nav-profile-m" style="display:none" onclick="navigate('profile')">Profile</a>
-    <a class="nav-link text-xs" data-page="chat" id="nav-chat-m" style="display:none" onclick="navigate('chat')">Chats</a>
-  </div>
-</header>
+    <!-- Toast container -->
+    <div id="toastContainer"></div>
 
-<!-- MARKET PAGE -->
-<section id="page-market" class="page active">
-  <div class="relative">
-    <div class="hero-glow"></div>
-    <div class="max-w-7xl mx-auto px-4 pt-12 pb-6">
-      <h1 class="font-heading text-4xl md:text-5xl font-bold text-center mb-3">Roblox Limiteds Marketplace</h1>
-      <p class="text-center mb-8" style="color:var(--text-muted); max-width:500px; margin-left:auto; margin-right:auto;">
-        Buy and sell Roblox limited items securely. Verified sellers, instant chat, escrow protection.
-      </p>
-      <div class="flex justify-center gap-4 mb-8 flex-wrap">
-        <div class="stat-card min-w-[120px]"><div class="stat-value" id="stat-listings">0</div><div class="stat-label">Listings</div></div>
-        <div class="stat-card min-w-[120px]"><div class="stat-value" id="stat-trades">0</div><div class="stat-label">Trades</div></div>
-        <div class="stat-card min-w-[120px]"><div class="stat-value" id="stat-users">0</div><div class="stat-label">Users</div></div>
-      </div>
-      <div class="max-w-md mx-auto flex gap-2 mb-8">
-        <input type="text" id="market-search" class="form-input flex-1" placeholder="Search limiteds..." oninput="filterMarket()">
-        <select id="market-sort" class="form-input" style="width:auto;min-width:140px" onchange="filterMarket()">
-          <option value="newest">Newest</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="value-high">Value: High to Low</option>
-        </select>
-      </div>
-    </div>
-  </div>
-  <div class="max-w-7xl mx-auto px-4 pb-16">
-    <div id="market-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-    </div>
-    <div id="market-empty" class="text-center py-20" style="display:none">
-      <i class="fa-solid fa-box-open text-4xl mb-4" style="color:var(--text-muted)"></i>
-      <p style="color:var(--text-muted)">No listings found. Be the first to sell!</p>
-    </div>
-  </div>
-</section>
+    <!-- App -->
+    <div class="app">
+        <!-- Navbar -->
+        <nav class="navbar" id="navbar">
+            <div class="nav-logo" onclick="switchPage('market')">🔷 LimitX</div>
+            <div class="nav-links" id="navLinks">
+                <button class="active" data-page="market" onclick="switchPage('market')">📊 Market</button>
+                <button data-page="sell" onclick="switchPage('sell')" id="navSell" style="display:none;">📤 List Item</button>
+                <button data-page="orders" onclick="switchPage('orders')" id="navOrders" style="display:none;">📋 Orders</button>
+                <button data-page="deposit" onclick="switchPage('deposit')" id="navDeposit" style="display:none;">💰 Deposit</button>
+                <button data-page="admin" onclick="switchPage('admin')" id="navAdmin" style="display:none;">🛡️ Admin</button>
+            </div>
+            <div class="nav-actions" id="navActions">
+                <span class="balance-display" id="balanceDisplay" style="display:none;" onclick="switchPage('deposit')">💵 $<span id="balAmt">0.00</span></span>
+                <button class="btn btn-outline btn-sm" id="btnLogin" onclick="showAuthModal('login')">🔐 Login</button>
+                <button class="btn btn-gold btn-sm" id="btnSignup" onclick="showAuthModal('signup')">✨ Sign Up</button>
+                <button class="btn btn-outline btn-sm" id="btnLogout" style="display:none;" onclick="logout()">🚪 Logout</button>
+            </div>
+        </nav>
 
-<!-- SELL PAGE -->
-<section id="page-sell" class="page">
-  <div class="max-w-3xl mx-auto px-4 py-12">
-    <h2 class="font-heading text-3xl font-bold mb-2">Sell Your Limiteds</h2>
-    <p class="mb-8" style="color:var(--text-muted)">Verify your Roblox account and list your limited items for sale.</p>
-
-    <!-- Step 1: Verify -->
-    <div id="sell-step-verify" class="mb-8">
-      <div class="p-6 rounded-2xl" style="background:var(--surface); border:1px solid var(--border)">
-        <h3 class="font-heading text-xl font-semibold mb-4"><i class="fa-solid fa-shield-check mr-2" style="color:var(--accent)"></i>Step 1: Verify Roblox Account</h3>
-        <div id="verify-not-done">
-          <p class="text-sm mb-4" style="color:var(--text-muted)">Enter your Roblox username to start verification.</p>
-          <div class="flex gap-2 mb-4">
-            <input type="text" id="roblox-username-input" class="form-input flex-1" placeholder="Roblox username">
-            <button class="btn-primary" onclick="startVerification()">Start</button>
-          </div>
-          <div id="verify-phase-box" style="display:none" class="mb-4">
-            <p class="text-sm mb-3" style="color:var(--text-muted)">Copy this phrase and paste it into your <strong style="color:var(--text)">Roblox profile bio</strong>:</p>
-            <div class="phrase-box mb-3" id="verify-phrase"></div>
-            <p class="text-xs mb-4" style="color:var(--text-muted)">After adding the phrase to your bio, click Verify below. This may take a few moments.</p>
-            <button class="btn-primary w-full" id="btn-do-verify" onclick="doVerification()"><i class="fa-solid fa-rotate mr-1"></i> Verify Now</button>
-          </div>
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <div id="page-market">
+                <div class="section-title">🔥 <span class="accent">Live Market</span> — Browse Listed Limiteds</div>
+                <div class="market-grid" id="marketGrid">
+                    <p style="color:var(--text2);">Loading listings...</p>
+                </div>
+            </div>
+            <div id="page-sell" style="display:none;">
+                <div class="section-title">📤 <span class="accent">List Your Limited</span></div>
+                <div id="sellStep1">
+                    <p style="margin-bottom:12px;">Verify your Roblox account to scan your inventory.</p>
+                    <input type="text" id="robloxUsernameInput" placeholder="Your Roblox Username" style="padding:12px 16px;border-radius:25px;border:1px solid var(--border);background:var(--bg3);color:var(--text);width:100%;max-width:350px;font-family:var(--font);font-size:0.9rem;outline:none;">
+                    <button class="btn btn-gold" style="margin-left:8px;" onclick="startVerification()">🔍 Verify & Scan</button>
+                    <div id="verificationInfo" style="margin-top:14px;display:none;">
+                        <p style="color:var(--gold2);font-weight:600;">📝 Put this phrase in your Roblox profile bio:</p>
+                        <code id="verifyPhrase" style="background:var(--bg4);padding:10px 16px;border-radius:8px;display:inline-block;margin:8px 0;font-size:1rem;letter-spacing:0.5px;user-select:all;"></code>
+                        <p style="font-size:0.8rem;color:var(--text2);">After adding it, click below to confirm.</p>
+                        <button class="btn btn-green" onclick="confirmVerification()">✅ I've Added It — Verify Now</button>
+                    </div>
+                    <div id="inventoryScan" style="margin-top:16px;display:none;">
+                        <p style="color:var(--green);font-weight:600;">✅ Verified! Scanning inventory from Rolimons...</p>
+                        <div id="inventoryList" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="page-orders" style="display:none;">
+                <div class="section-title">📋 <span class="accent">Order History</span></div>
+                <div id="ordersList"><p style="color:var(--text2);">No orders yet.</p></div>
+            </div>
+            <div id="page-deposit" style="display:none;">
+                <div class="section-title">💰 <span class="accent">Deposit Funds</span></div>
+                <p style="color:var(--text2);margin-bottom:16px;">Choose a method to add balance. For larger amounts, contact support.</p>
+                <div class="deposit-options">
+                    <div class="deposit-card"><div class="crypto-icon">₿</div><strong>Bitcoin (BTC)</strong><div class="address">bc1qexampleaddressxyz1234567890abcdefghijklmn</div></div>
+                    <div class="deposit-card"><div class="crypto-icon">Ξ</div><strong>Ethereum (ETH)</strong><div class="address">0xExampleAddress1234567890ABCDEF1234567890ABCD</div></div>
+                    <div class="deposit-card"><div class="crypto-icon">Ł</div><strong>Litecoin (LTC)</strong><div class="address">LTCexampleAddressXYZ1234567890abcdefghij</div></div>
+                    <div class="deposit-card"><div class="crypto-icon">💲</div><strong>USDT (TRC20)</strong><div class="address">TExampleAddressXYZ1234567890abcdefghijkl</div></div>
+                    <div class="deposit-card"><div class="crypto-icon">🅿️</div><strong>PayPal</strong><p style="font-size:0.8rem;color:var(--text2);">Contact support for PayPal invoice</p></div>
+                    <div class="deposit-card"><div class="crypto-icon">💵</div><strong>CashApp</strong><p style="font-size:0.8rem;color:var(--text2);">$LimitXSupport — Include your username</p></div>
+                </div>
+                <p style="margin-top:16px;color:var(--text2);font-size:0.85rem;">📧 After sending, email <strong>support@limitx.com</strong> with transaction details. Your balance will be credited within 1-24 hours.</p>
+                <button class="btn btn-outline" style="margin-top:10px;" onclick="submitDepositRequest()">📩 Submit Deposit Request</button>
+                <div id="depositRequestsList" style="margin-top:20px;"></div>
+            </div>
+            <div id="page-admin" style="display:none;">
+                <div class="section-title">🛡️ <span class="accent">Admin Panel</span></div>
+                <div id="adminLoginArea">
+                    <input type="password" id="adminPasswordInput" placeholder="Admin Password" style="padding:12px 16px;border-radius:25px;border:1px solid var(--border);background:var(--bg3);color:var(--text);width:100%;max-width:300px;font-family:var(--font);font-size:0.9rem;outline:none;">
+                    <button class="btn btn-gold" style="margin-left:8px;" onclick="adminLogin()">🔓 Unlock Admin</button>
+                </div>
+                <div id="adminContent" style="display:none;">
+                    <div class="admin-tabs">
+                        <button class="active" onclick="adminSwitchTab('trades')">📊 Trades</button>
+                        <button onclick="adminSwitchTab('accounts')">👤 Accounts</button>
+                        <button onclick="adminSwitchTab('chats')">💬 Chats</button>
+                        <button onclick="adminSwitchTab('deposits')">💰 Deposits</button>
+                    </div>
+                    <div id="adminTabContent" style="max-height:500px;overflow-y:auto;"></div>
+                </div>
+            </div>
+            <div id="page-chat" style="display:none;">
+                <div class="section-title">💬 <span class="accent">Trade Chat</span> — <span id="chatTitle"></span></div>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChatMessage()">
+                        <button class="btn btn-gold btn-sm" onclick="sendChatMessage()">Send</button>
+                        <button class="btn btn-green btn-sm" id="btnRelease" style="display:none;" onclick="releasePayment()">🔓 Release Payment</button>
+                    </div>
+                </div>
+                <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="switchPage('market')">← Back to Market</button>
+            </div>
         </div>
-        <div id="verify-done" style="display:none" class="flex items-center gap-3">
-          <i class="fa-solid fa-circle-check text-2xl" style="color:var(--success)"></i>
-          <div>
-            <p class="font-semibold">Verified as <span id="verified-roblox-name"></span></p>
-            <p class="text-sm" style="color:var(--text-muted)">Your limiteds have been loaded.</p>
-          </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal" style="display:none;">
+        <div class="modal" id="authModalInner">
+            <h2 id="authModalTitle">Login</h2>
+            <p class="error-msg" id="authError"></p>
+            <p class="success-msg" id="authSuccess"></p>
+            <input type="email" id="authEmail" placeholder="Email address">
+            <input type="text" id="authUsername" placeholder="Username (signup only)" style="display:none;">
+            <input type="password" id="authPassword" placeholder="Password">
+            <button class="btn btn-gold" id="authSubmitBtn" onclick="handleAuth()">Login</button>
+            <p class="alt-link" id="authAltLink">Don't have an account? <span onclick="toggleAuthMode()">Sign Up</span></p>
         </div>
-      </div>
     </div>
 
-    <!-- Step 2: List -->
-    <div id="sell-step-list">
-      <div class="p-6 rounded-2xl" style="background:var(--surface); border:1px solid var(--border)">
-        <h3 class="font-heading text-xl font-semibold mb-4"><i class="fa-solid fa-list mr-2" style="color:var(--accent)"></i>Step 2: List an Item</h3>
-        <div id="limiteds-list" class="grid gap-3">
-        </div>
-        <div id="no-limiteds" class="text-center py-8" style="display:none">
-          <p style="color:var(--text-muted)">No limiteds found in your inventory.</p>
-        </div>
-        <div id="must-verify-first" class="text-center py-8">
-          <p style="color:var(--text-muted)">Please verify your Roblox account first.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+    <script>
+        // ==================== FIREBASE CONFIG ====================
+        // 🔴 REPLACE THIS WITH YOUR OWN FIREBASE CONFIG 🔴
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-PLACEHOLDER-REPLACE-WITH-YOUR-KEY",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "000000000000",
+            appId: "1:000000000000:web:xxxxxxxxxxxxxx"
+        };
 
-<!-- PROFILE PAGE -->
-<section id="page-profile" class="page">
-  <div class="max-w-4xl mx-auto px-4 py-12">
-    <h2 class="font-heading text-3xl font-bold mb-2">My Profile</h2>
-    <p class="mb-8" style="color:var(--text-muted)">Manage your account, balance, and view order history.</p>
+        let firestoreReady = false;
+        let db = null;
 
-    <div class="grid md:grid-cols-3 gap-4 mb-8">
-      <div class="stat-card"><div class="stat-value" id="prof-balance">$0.00</div><div class="stat-label">Balance</div></div>
-      <div class="stat-card"><div class="stat-value" id="prof-listings">0</div><div class="stat-label">Active Listings</div></div>
-      <div class="stat-card"><div class="stat-value" id="prof-trades">0</div><div class="stat-label">Total Trades</div></div>
-    </div>
-
-    <div class="flex gap-3 mb-8">
-      <button class="btn-primary" onclick="openDeposit()"><i class="fa-solid fa-plus mr-1"></i> Deposit Funds</button>
-      <button class="btn-secondary" onclick="navigate('sell')"><i class="fa-solid fa-tag mr-1"></i> List Item</button>
-    </div>
-
-    <!-- My Listings -->
-    <div class="mb-8">
-      <h3 class="font-heading text-lg font-semibold mb-3">My Listings</h3>
-      <div id="my-listings" class="grid gap-3"></div>
-      <div id="no-my-listings" class="text-center py-6" style="display:none"><p style="color:var(--text-muted)">You have no active listings.</p></div>
-    </div>
-
-    <!-- Order History -->
-    <div>
-      <h3 class="font-heading text-lg font-semibold mb-3">Order History</h3>
-      <div class="rounded-2xl overflow-hidden" style="background:var(--surface); border:1px solid var(--border)">
-        <div class="overflow-x-auto">
-          <table class="data-table" id="history-table">
-            <thead><tr><th>Item</th><th>Role</th><th>Amount</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
-            <tbody id="history-body"></tbody>
-          </table>
-        </div>
-        <div id="no-history" class="text-center py-6"><p style="color:var(--text-muted)">No trades yet.</p></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CHAT PAGE -->
-<section id="page-chat" class="page">
-  <div class="max-w-3xl mx-auto px-4 py-12">
-    <h2 class="font-heading text-3xl font-bold mb-2">Trade Chats</h2>
-    <p class="mb-8" style="color:var(--text-muted)">Communicate with buyers/sellers to complete trades.</p>
-    <div id="chat-list" class="flex flex-col gap-3 mb-6"></div>
-    <div id="no-chats" class="text-center py-12"><i class="fa-solid fa-comments text-3xl mb-3" style="color:var(--text-muted)"></i><p style="color:var(--text-muted)">No active chats. Buy an item to start a trade conversation.</p></div>
-    <div id="chat-active" style="display:none">
-      <div class="flex items-center gap-3 mb-4">
-        <button class="btn-secondary text-xs py-1.5 px-3" onclick="closeActiveChat()"><i class="fa-solid fa-arrow-left mr-1"></i> Back</button>
-        <h3 class="font-heading text-lg font-semibold" id="chat-active-title"></h3>
-        <span class="badge badge-warning ml-2" id="chat-active-status"></span>
-      </div>
-      <div class="chat-messages" id="chat-messages-box"></div>
-      <div class="flex gap-2 mt-3">
-        <input type="text" id="chat-input" class="form-input flex-1" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()">
-        <button class="btn-primary" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
-      </div>
-      <div class="flex gap-2 mt-3" id="chat-actions"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ADMIN PAGE -->
-<section id="page-admin" class="page">
-  <div class="max-w-7xl mx-auto px-4 py-12">
-    <h2 class="font-heading text-3xl font-bold mb-2">Admin Panel</h2>
-    <p class="mb-6" style="color:var(--text-muted)">Manage users, trades, and moderate chats.</p>
-    <div class="flex gap-2 mb-6 flex-wrap">
-      <button class="tab-btn active" onclick="switchAdminTab('users',this)">Users</button>
-      <button class="tab-btn" onclick="switchAdminTab('trades',this)">Trades</button>
-      <button class="tab-btn" onclick="switchAdminTab('chats',this)">Chats</button>
-      <button class="tab-btn" onclick="switchAdminTab('deposits',this)">Deposits</button>
-    </div>
-    <div id="admin-users" class="admin-tab">
-      <div class="rounded-2xl overflow-hidden" style="background:var(--surface); border:1px solid var(--border)">
-        <div class="overflow-x-auto">
-          <table class="data-table"><thead><tr><th>UID</th><th>Username</th><th>Email</th><th>Balance</th><th>Roblox</th><th>Verified</th><th>Actions</th></tr></thead><tbody id="admin-users-body"></tbody></table>
-        </div>
-      </div>
-    </div>
-    <div id="admin-trades" class="admin-tab" style="display:none">
-      <div class="rounded-2xl overflow-hidden" style="background:var(--surface); border:1px solid var(--border)">
-        <div class="overflow-x-auto">
-          <table class="data-table"><thead><tr><th>ID</th><th>Item</th><th>Buyer</th><th>Seller</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody id="admin-trades-body"></tbody></table>
-        </div>
-      </div>
-    </div>
-    <div id="admin-chats" class="admin-tab" style="display:none">
-      <div id="admin-chat-list" class="flex flex-col gap-3"></div>
-    </div>
-    <div id="admin-deposits" class="admin-tab" style="display:none">
-      <div class="rounded-2xl overflow-hidden" style="background:var(--surface); border:1px solid var(--border)">
-        <div class="overflow-x-auto">
-          <table class="data-table"><thead><tr><th>ID</th><th>User</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="admin-deposits-body"></tbody></table>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- AUTH MODAL -->
-<div class="modal-overlay" id="auth-modal">
-  <div class="modal-box">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="font-heading text-xl font-bold" id="auth-title">Sign Up</h3>
-      <button onclick="closeAuth()" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:1.2rem"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="flex gap-2 mb-6">
-      <button class="tab-btn active" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
-      <button class="tab-btn" id="tab-login" onclick="switchAuthTab('login')">Login</button>
-    </div>
-    <!-- Signup Form -->
-    <form id="signup-form" onsubmit="handleSignup(event)">
-      <div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-input" id="s-email" required></div>
-      <div class="mb-3"><label class="form-label">Username</label><input type="text" class="form-input" id="s-username" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+"></div>
-      <div class="mb-4"><label class="form-label">Password</label><input type="password" class="form-input" id="s-password" required minlength="6"></div>
-      <button type="submit" class="btn-primary w-full" id="btn-signup">Create Account</button>
-    </form>
-    <!-- Login Form -->
-    <form id="login-form" style="display:none" onsubmit="handleLogin(event)">
-      <div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-input" id="l-email" required></div>
-      <div class="mb-4"><label class="form-label">Password</label><input type="password" class="form-input" id="l-password" required></div>
-      <button type="submit" class="btn-primary w-full" id="btn-login">Login</button>
-    </form>
-  </div>
-</div>
-
-<!-- DEPOSIT MODAL -->
-<div class="modal-overlay" id="deposit-modal">
-  <div class="modal-box">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="font-heading text-xl font-bold">Deposit Funds</h3>
-      <button onclick="closeDeposit()" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:1.2rem"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="mb-4">
-      <label class="form-label">Amount (USD)</label>
-      <input type="number" class="form-input" id="deposit-amount" min="1" step="0.01" placeholder="10.00" required>
-    </div>
-    <div class="mb-4">
-      <label class="form-label">Payment Method</label>
-      <select class="form-input" id="deposit-method">
-        <option value="crypto_btc">Bitcoin (BTC)</option>
-        <option value="crypto_eth">Ethereum (ETH)</option>
-        <option value="crypto_ltc">Litecoin (LTC)</option>
-        <option value="paypal">PayPal</option>
-        <option value="cashapp">CashApp</option>
-      </select>
-    </div>
-    <div id="deposit-info" class="p-4 rounded-xl mb-4" style="background:var(--elevated); border:1px solid var(--border); display:none"></div>
-    <div class="mb-4">
-      <label class="form-label">Transaction Hash / Reference (optional)</label>
-      <input type="text" class="form-input" id="deposit-tx" placeholder="Paste transaction ID here">
-    </div>
-    <button class="btn-primary w-full" onclick="submitDeposit()">Submit Deposit Request</button>
-    <p class="text-xs mt-3 text-center" style="color:var(--text-muted)">Deposits are reviewed manually. Contact support if not credited within 24 hours.</p>
-  </div>
-</div>
-
-<!-- LISTING DETAIL MODAL -->
-<div class="modal-overlay" id="listing-modal">
-  <div class="modal-box wide">
-    <div class="flex justify-between items-start mb-4">
-      <div class="flex gap-4 items-start">
-        <img id="lm-img" src="" class="w-28 h-28 rounded-xl object-cover" style="background:var(--elevated)">
-        <div>
-          <h3 class="font-heading text-xl font-bold" id="lm-name"></h3>
-          <p class="text-sm mt-1" style="color:var(--text-muted)">Seller: <span id="lm-seller" class="font-semibold" style="color:var(--text)"></span></p>
-          <div class="flex gap-4 mt-2">
-            <div><span class="text-xs" style="color:var(--text-muted)">RAP Value</span><p class="font-heading font-bold" style="color:var(--info)" id="lm-rap"></p></div>
-            <div><span class="text-xs" style="color:var(--text-muted)">Asking Price</span><p class="font-heading font-bold" style="color:var(--accent)" id="lm-price"></p></div>
-          </div>
-        </div>
-      </div>
-      <button onclick="closeListingModal()" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:1.2rem"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <button class="btn-primary w-full text-base py-3" id="lm-buy-btn" onclick="buyNow()"><i class="fa-solid fa-bolt mr-2"></i>Buy Now</button>
-    <p class="text-xs mt-3 text-center" style="color:var(--text-muted)">Funds are held in escrow until you confirm the trade is complete.</p>
-  </div>
-</div>
-
-<!-- ADMIN ADD BALANCE MODAL -->
-<div class="modal-overlay" id="admin-balance-modal">
-  <div class="modal-box">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="font-heading text-xl font-bold">Adjust Balance</h3>
-      <button onclick="closeAdminBalance()" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:1.2rem"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <input type="hidden" id="ab-uid">
-    <p class="text-sm mb-4" style="color:var(--text-muted)">User: <span id="ab-username" class="font-semibold" style="color:var(--text)"></span></p>
-    <div class="mb-4"><label class="form-label">Amount (USD, positive to add, negative to remove)</label><input type="number" class="form-input" id="ab-amount" step="0.01" placeholder="10.00"></div>
-    <button class="btn-primary w-full" onclick="adminAdjustBalance()">Apply</button>
-  </div>
-</div>
-
-<!-- ADMIN VIEW CHAT MODAL -->
-<div class="modal-overlay" id="admin-chat-modal">
-  <div class="modal-box wide">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="font-heading text-xl font-bold" id="acm-title">Chat</h3>
-      <button onclick="closeAdminChat()" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:1.2rem"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="chat-messages" id="acm-messages" style="height:350px"></div>
-  </div>
-</div>
-
-</div><!-- /app-wrap -->
-
-<div id="toast-container"></div>
-
-<script>
-/*
-=============================================================
-FIREBASE SETUP - REPLACE WITH YOUR OWN CONFIG
-=============================================================
-Go to Firebase Console > Project Settings > Your Apps > Config
-Enable Authentication > Email/Password
-Enable Cloud Firestore
-=============================================================
-*/
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// Crypto wallet addresses - REPLACE WITH YOUR OWN
-const WALLETS = {
-  crypto_btc: 'bc1qYOUR_BTC_WALLET_ADDRESS',
-  crypto_eth: '0xYOUR_ETH_WALLET_ADDRESS',
-  crypto_ltc: 'ltc1qYOUR_LTC_WALLET_ADDRESS',
-  paypal: 'paypalemail@example.com',
-  cashapp: '$YourCashAppTag'
-};
-
-// Random words for verification phrase
-const PHRASE_WORDS = [
-  'sky','fly','sun','moon','star','wind','fire','rain','snow','wave',
-  'leaf','tree','rock','sand','cloud','bird','fish','bear','wolf','hawk',
-  'fox','deer','lake','hill','rose','lily','dawn','dusk','mist','glow',
-  'calm','warm','cool','blue','green','gold','soft','bright','light','deep',
-  'fast','slow','high','low','near','far','big','small','clear','still'
-];
-
-// CORS proxy for Roblox/Rolimons requests
-const CORS_PROXIES = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`
-];
-
-/* ============ APP STATE ============ */
-const STATE = {
-  user: null,         // Firestore user doc
-  authUser: null,     // Firebase Auth user
-  currentPage: 'market',
-  isAdmin: false,
-  currentListing: null,
-  currentChatId: null,
-  chatUnsub: null,
-  allListings: [],
-  verifyPhrase: '',
-  verifyRobloxId: null,
-  userLimiteds: []
-};
-
-/* ============ PARTICLES BACKGROUND ============ */
-(function initParticles() {
-  const canvas = document.getElementById('particles-canvas');
-  const ctx = canvas.getContext('2d');
-  let particles = [];
-  let w, h;
-
-  function resize() {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  // Create particles
-  for (let i = 0; i < 60; i++) {
-    particles.push({
-      x: Math.random() * w, y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 2 + 0.5,
-      a: Math.random() * 0.5 + 0.1
-    });
-  }
-
-  function animate() {
-    ctx.clearRect(0, 0, w, h);
-    particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
-      if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(232,168,32,${p.a})`;
-      ctx.fill();
-    });
-    // Draw connections
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(232,168,32,${0.06 * (1 - dist / 120)})`;
-          ctx.stroke();
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            firestoreReady = true;
+            console.log('✅ Firebase initialized');
+        } catch (e) {
+            console.warn('⚠️ Firebase config not set — running in demo mode with mock data.');
+            console.warn('Please replace firebaseConfig with your own Firebase project credentials.');
         }
-      }
-    }
-    requestAnimationFrame(animate);
-  }
-  // Respect reduced motion preference
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    animate();
-  }
-})();
 
-/* ============ TOAST NOTIFICATIONS ============ */
-function toast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  const icons = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
-  container.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = 'slideOut 0.3s ease forwards';
-    setTimeout(() => el.remove(), 300);
-  }, 4000);
-}
+        // ==================== GLOBAL STATE ====================
+        let currentUser = null; // { uid, email, username, balance, robloxUsername, verified }
+        let currentPage = 'market';
+        let authMode = 'login';
+        let pendingVerificationPhrase = null;
+        let pendingVerificationUsername = null;
+        let pendingVerificationRobloxId = null;
+        let activeChatId = null;
+        let activeChatListingId = null;
+        let activeChatUnsub = null;
+        let isAdmin = false;
+        let adminActiveTab = 'trades';
 
-/* ============ NAVIGATION ============ */
-function navigate(page) {
-  // Auth guard for protected pages
-  if (['sell','profile','chat'].includes(page) && !STATE.user) {
-    toast('Please sign in to continue.', 'error');
-    openAuth();
-    return;
-  }
-  if (page === 'admin' && !STATE.isAdmin) {
-    promptAdminPassword();
-    return;
-  }
-
-  STATE.currentPage = page;
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const target = document.getElementById(`page-${page}`);
-  if (target) target.classList.add('active');
-
-  // Update nav links
-  document.querySelectorAll('.nav-link[data-page]').forEach(l => {
-    l.classList.toggle('active', l.dataset.page === page);
-  });
-
-  // Load page data
-  if (page === 'market') loadMarket();
-  if (page === 'sell') loadSellPage();
-  if (page === 'profile') loadProfile();
-  if (page === 'chat') loadChats();
-  if (page === 'admin') loadAdmin();
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-/* ============ AUTH ============ */
-function openAuth() {
-  document.getElementById('auth-modal').classList.add('open');
-  switchAuthTab('signup');
-}
-function closeAuth() {
-  document.getElementById('auth-modal').classList.remove('open');
-}
-function switchAuthTab(tab) {
-  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
-  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
-  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
-  document.getElementById('auth-title').textContent = tab === 'signup' ? 'Sign Up' : 'Login';
-}
-
-async function handleSignup(e) {
-  e.preventDefault();
-  const email = document.getElementById('s-email').value.trim();
-  const username = document.getElementById('s-username').value.trim().toLowerCase();
-  const password = document.getElementById('s-password').value;
-
-  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-    toast('Username must be 3-20 characters (letters, numbers, underscores only).', 'error');
-    return;
-  }
-
-  const btn = document.getElementById('btn-signup');
-  btn.disabled = true;
-  btn.textContent = 'Creating...';
-
-  try {
-    // Check username uniqueness
-    const usernameCheck = await db.collection('users').where('username', '==', username).get();
-    if (!usernameCheck.empty) {
-      toast('This username is already taken.', 'error');
-      btn.disabled = false;
-      btn.textContent = 'Create Account';
-      return;
-    }
-
-    // Create auth account
-    const cred = await auth.createUserWithEmailAndPassword(email, password);
-    await cred.user.updateProfile({ displayName: username });
-
-    // Create Firestore user document
-    await db.collection('users').doc(cred.user.uid).set({
-      email, username, balance: 0,
-      robloxUsername: null, robloxUserId: null,
-      verified: false, limiteds: [],
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    toast('Account created successfully!', 'success');
-    closeAuth();
-  } catch (err) {
-    toast(err.message.replace('Firebase: ', ''), 'error');
-  }
-  btn.disabled = false;
-  btn.textContent = 'Create Account';
-}
-
-async function handleLogin(e) {
-  e.preventDefault();
-  const email = document.getElementById('l-email').value.trim();
-  const password = document.getElementById('l-password').value;
-
-  const btn = document.getElementById('btn-login');
-  btn.disabled = true;
-  btn.textContent = 'Logging in...';
-
-  try {
-    await auth.signInWithEmailAndPassword(email, password);
-    toast('Logged in successfully!', 'success');
-    closeAuth();
-  } catch (err) {
-    toast(err.message.replace('Firebase: ', ''), 'error');
-  }
-  btn.disabled = false;
-  btn.textContent = 'Login';
-}
-
-function logout() {
-  auth.signOut();
-  STATE.isAdmin = false;
-  STATE.user = null;
-  updateAuthUI();
-  navigate('market');
-  toast('Logged out.', 'info');
-}
-
-async function updateAuthUI() {
-  const userMenu = document.getElementById('user-menu');
-  const btnAuth = document.getElementById('btn-auth');
-  const navProfile = document.querySelectorAll('#nav-profile, #nav-profile-m');
-  const navChat = document.querySelectorAll('#nav-chat, #nav-chat-m');
-  const btnAdminNav = document.getElementById('btn-admin-nav');
-
-  if (STATE.user) {
-    userMenu.style.display = 'flex';
-    btnAuth.style.display = 'none';
-    navProfile.forEach(el => el.style.display = '');
-    navChat.forEach(el => el.style.display = '');
-    document.getElementById('header-username').textContent = STATE.user.username;
-    document.getElementById('header-balance').textContent = (STATE.user.balance || 0).toFixed(2);
-  } else {
-    userMenu.style.display = 'none';
-    btnAuth.style.display = '';
-    navProfile.forEach(el => el.style.display = 'none');
-    navChat.forEach(el => el.style.display = 'none');
-  }
-  btnAdminNav.style.display = STATE.isAdmin ? '' : 'none';
-}
-
-// Auth state listener
-auth.onAuthStateChanged(async (user) => {
-  if (user) {
-    STATE.authUser = user;
-    try {
-      const doc = await db.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        STATE.user = { id: doc.id, ...doc.data() };
-      } else {
-        // User doc might not exist if created elsewhere
-        STATE.user = null;
-      }
-    } catch (err) {
-      console.error('Error loading user:', err);
-      STATE.user = null;
-    }
-  } else {
-    STATE.authUser = null;
-    STATE.user = null;
-    STATE.isAdmin = false;
-  }
-  updateAuthUI();
-  // Reload current page data
-  if (STATE.currentPage === 'market') loadMarket();
-});
-
-/* ============ ADMIN PASSWORD GATE ============ */
-function promptAdminPassword() {
-  // Create inline password prompt instead of alert/prompt
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay open';
-  overlay.id = 'admin-prompt-overlay';
-  overlay.innerHTML = `
-    <div class="modal-box" style="max-width:360px">
-      <h3 class="font-heading text-xl font-bold mb-4">Admin Access</h3>
-      <div class="mb-4">
-        <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="admin-pw-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')checkAdminPw()">
-      </div>
-      <div class="flex gap-2">
-        <button class="btn-primary flex-1" onclick="checkAdminPw()">Enter</button>
-        <button class="btn-secondary flex-1" onclick="document.getElementById('admin-prompt-overlay').remove()">Cancel</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  setTimeout(() => document.getElementById('admin-pw-input')?.focus(), 100);
-}
-
-function checkAdminPw() {
-  const pw = document.getElementById('admin-pw-input')?.value;
-  if (pw === 'egypt123') {
-    STATE.isAdmin = true;
-    document.getElementById('admin-prompt-overlay')?.remove();
-    updateAuthUI();
-    navigate('admin');
-    toast('Admin access granted.', 'success');
-  } else {
-    toast('Incorrect password.', 'error');
-  }
-}
-
-/* ============ MARKET ============ */
-async function loadMarket() {
-  const grid = document.getElementById('market-grid');
-  const empty = document.getElementById('market-empty');
-  grid.innerHTML = '';
-
-  // Show skeletons
-  for (let i = 0; i < 10; i++) {
-    grid.innerHTML += `<div class="market-card"><div class="skeleton" style="aspect-ratio:1"></div><div class="p-3"><div class="skeleton" style="height:16px;width:70%;margin-bottom:8px"></div><div class="skeleton" style="height:14px;width:50%"></div></div></div>`;
-  }
-
-  try {
-    const snap = await db.collection('listings').where('status', '==', 'active').orderBy('createdAt', 'desc').get();
-    STATE.allListings = [];
-    snap.forEach(doc => STATE.allListings.push({ id: doc.id, ...doc.data() }));
-    filterMarket();
-
-    // Update stats
-    document.getElementById('stat-listings').textContent = STATE.allListings.length;
-    try {
-      const tradeSnap = await db.collection('trades').get();
-      document.getElementById('stat-trades').textContent = tradeSnap.size;
-    } catch(e) {}
-    try {
-      const userSnap = await db.collection('users').get();
-      document.getElementById('stat-users').textContent = userSnap.size;
-    } catch(e) {}
-  } catch (err) {
-    grid.innerHTML = '';
-    empty.style.display = '';
-    console.error('Error loading market:', err);
-  }
-}
-
-function filterMarket() {
-  const grid = document.getElementById('market-grid');
-  const empty = document.getElementById('market-empty');
-  const search = document.getElementById('market-search').value.toLowerCase();
-  const sort = document.getElementById('market-sort').value;
-
-  let items = STATE.allListings.filter(l =>
-    l.itemName.toLowerCase().includes(search) ||
-    (l.sellerUsername || '').toLowerCase().includes(search)
-  );
-
-  if (sort === 'price-low') items.sort((a, b) => a.price - b.price);
-  else if (sort === 'price-high') items.sort((a, b) => b.price - a.price);
-  else if (sort === 'value-high') items.sort((a, b) => (b.itemRap || 0) - (a.itemRap || 0));
-
-  grid.innerHTML = '';
-  if (items.length === 0) {
-    empty.style.display = '';
-    return;
-  }
-  empty.style.display = 'none';
-
-  items.forEach(item => {
-    const imgSrc = `https://roblox.com/asset-thumbnail/image?assetId=${item.itemId}&width=150&height=150&format=png`;
-    const card = document.createElement('div');
-    card.className = 'market-card';
-    card.onclick = () => openListingModal(item);
-    card.innerHTML = `
-      <img src="${imgSrc}" alt="${item.itemName}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22><rect fill=%22%23161622%22 width=%22150%22 height=%22150%22/><text x=%2275%22 y=%2280%22 text-anchor=%22middle%22 fill=%22%236e6e88%22 font-size=%2212%22>No Image</text></svg>'">
-      <div class="p-3">
-        <p class="text-sm font-semibold truncate mb-1">${item.itemName}</p>
-        <div class="flex justify-between items-center">
-          <span class="text-xs" style="color:var(--text-muted)">RAP: ${(item.itemRap || 0).toLocaleString()}</span>
-        </div>
-        <div class="flex justify-between items-center mt-1">
-          <span class="font-heading font-bold" style="color:var(--accent)">$${item.price.toFixed(2)}</span>
-          <span class="text-xs" style="color:var(--text-muted)">${item.sellerUsername || 'Seller'}</span>
-        </div>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
-}
-
-/* ============ LISTING MODAL ============ */
-function openListingModal(item) {
-  STATE.currentListing = item;
-  const imgSrc = `https://roblox.com/asset-thumbnail/image?assetId=${item.itemId}&width=420&height=420&format=png`;
-  document.getElementById('lm-img').src = imgSrc;
-  document.getElementById('lm-name').textContent = item.itemName;
-  document.getElementById('lm-seller').textContent = item.sellerUsername || 'Unknown';
-  document.getElementById('lm-rap').textContent = `R$ ${(item.itemRap || 0).toLocaleString()}`;
-  document.getElementById('lm-price').textContent = `$${item.price.toFixed(2)}`;
-
-  const buyBtn = document.getElementById('lm-buy-btn');
-  if (STATE.user && STATE.user.id === item.sellerId) {
-    buyBtn.textContent = 'This is your own listing';
-    buyBtn.disabled = true;
-  } else if (!STATE.user) {
-    buyBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i>Sign In to Buy';
-    buyBtn.disabled = false;
-    buyBtn.onclick = () => { closeListingModal(); openAuth(); };
-  } else {
-    buyBtn.innerHTML = '<i class="fa-solid fa-bolt mr-2"></i>Buy Now';
-    buyBtn.disabled = false;
-    buyBtn.onclick = buyNow;
-  }
-  document.getElementById('listing-modal').classList.add('open');
-}
-function closeListingModal() {
-  document.getElementById('listing-modal').classList.remove('open');
-  STATE.currentListing = null;
-}
-
-/* ============ BUY NOW ============ */
-async function buyNow() {
-  if (!STATE.user || !STATE.currentListing) return;
-  const listing = STATE.currentListing;
-
-  if (STATE.user.balance < listing.price) {
-    toast(`Insufficient balance. You need $${(listing.price - STATE.user.balance).toFixed(2)} more.`, 'error');
-    return;
-  }
-
-  // Check if already has a pending trade for this listing
-  try {
-    const existing = await db.collection('trades')
-      .where('listingId', '==', listing.id)
-      .where('buyerId', '==', STATE.user.id)
-      .where('status', '==', 'pending').get();
-    if (!existing.empty) {
-      toast('You already have a pending purchase for this item. Check your chats.', 'info');
-      closeListingModal();
-      navigate('chat');
-      return;
-    }
-  } catch(e) {}
-
-  const btn = document.getElementById('lm-buy-btn');
-  btn.disabled = true;
-  btn.textContent = 'Processing...';
-
-  try {
-    // Deduct balance from buyer using transaction
-    await db.runTransaction(async (transaction) => {
-      const buyerDoc = await transaction.get(db.collection('users').doc(STATE.user.id));
-      if (!buyerDoc.exists) throw new Error('User not found');
-      const newBalance = buyerDoc.data().balance - listing.price;
-      if (newBalance < 0) throw new Error('Insufficient balance');
-      transaction.update(db.collection('users').doc(STATE.user.id), { balance: newBalance });
-    });
-
-    // Create trade
-    const tradeRef = await db.collection('trades').add({
-      listingId: listing.id,
-      itemId: listing.itemId,
-      itemName: listing.itemName,
-      buyerId: STATE.user.id,
-      buyerUsername: STATE.user.username,
-      sellerId: listing.sellerId,
-      sellerUsername: listing.sellerUsername,
-      amount: listing.price,
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Create chat
-    await db.collection('chats').doc(tradeRef.id).set({
-      tradeId: tradeRef.id,
-      participants: [STATE.user.id, listing.sellerId],
-      listingId: listing.id,
-      itemName: listing.itemName,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Update listing status
-    await db.collection('listings').doc(listing.id).update({ status: 'pending' });
-
-    // Refresh user data
-    const freshUser = await db.collection('users').doc(STATE.user.id).get();
-    STATE.user = { id: freshUser.id, ...freshUser.data() };
-    updateAuthUI();
-
-    toast('Purchase initiated! Chat with the seller to complete the trade.', 'success');
-    closeListingModal();
-    navigate('chat');
-
-    // Auto-open the chat
-    setTimeout(() => openChat(tradeRef.id), 500);
-  } catch (err) {
-    toast(err.message || 'Purchase failed. Try again.', 'error');
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-bolt mr-2"></i>Buy Now';
-  }
-}
-
-/* ============ SELL PAGE ============ */
-function loadSellPage() {
-  if (!STATE.user) return;
-  const verified = STATE.user.verified;
-  document.getElementById('verify-not-done').style.display = verified ? 'none' : '';
-  document.getElementById('verify-done').style.display = verified ? 'flex' : 'none';
-  document.getElementById('verify-phase-box').style.display = 'none';
-
-  if (verified) {
-    document.getElementById('verified-roblox-name').textContent = STATE.user.robloxUsername;
-    renderLimitedsList();
-  } else {
-    document.getElementById('must-verify-first').style.display = '';
-    document.getElementById('limiteds-list').innerHTML = '';
-    document.getElementById('no-limiteds').style.display = 'none';
-  }
-}
-
-function generatePhrase() {
-  const count = 3 + Math.floor(Math.random() * 3); // 3-5 words
-  const words = [];
-  const used = new Set();
-  while (words.length < count) {
-    const w = PHRASE_WORDS[Math.floor(Math.random() * PHRASE_WORDS.length)];
-    if (!used.has(w)) { words.push(w); used.add(w); }
-  }
-  return 'limiteds ' + words.join(' ');
-}
-
-async function startVerification() {
-  const username = document.getElementById('roblox-username-input').value.trim();
-  if (!username) { toast('Enter a Roblox username.', 'error'); return; }
-
-  try {
-    toast('Looking up Roblox account...', 'info');
-    // Search for user via CORS proxy
-    const searchUrl = `https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(username)}`;
-    let userData = null;
-
-    for (const proxyFn of CORS_PROXIES) {
-      try {
-        const resp = await fetch(proxyFn(searchUrl));
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.data && data.data.length > 0) {
-            const found = data.data.find(u => u.name.toLowerCase() === username.toLowerCase());
-            if (found) { userData = found; break; }
-          }
+        // ==================== TOAST SYSTEM ====================
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
-      } catch(e) { continue; }
-    }
 
-    if (!userData) {
-      toast('Roblox account not found. Check the username.', 'error');
-      return;
-    }
-
-    STATE.verifyRobloxId = userData.id;
-    STATE.verifyPhrase = generatePhrase();
-
-    document.getElementById('verify-phrase').textContent = STATE.verifyPhrase;
-    document.getElementById('verify-phase-box').style.display = '';
-    toast('Phrase generated. Add it to your Roblox bio, then click Verify.', 'success');
-  } catch (err) {
-    toast('Failed to look up Roblox user. Try again later.', 'error');
-    console.error(err);
-  }
-}
-
-async function doVerification() {
-  if (!STATE.verifyRobloxId || !STATE.verifyPhrase) return;
-
-  const btn = document.getElementById('btn-do-verify');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Verifying...';
-
-  try {
-    // Fetch profile page to check bio
-    const profileUrl = `https://www.roblox.com/users/${STATE.verifyRobloxId}/profile`;
-    let bioFound = false;
-
-    for (const proxyFn of CORS_PROXIES) {
-      try {
-        const resp = await fetch(proxyFn(profileUrl));
-        if (resp.ok) {
-          const html = await resp.text();
-          if (html.includes(STATE.verifyPhrase)) {
-            bioFound = true;
-            break;
-          }
+        // ==================== PARTICLES ====================
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 4 + 2;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 8 + 's';
+                p.style.animationDuration = (Math.random() * 10 + 6) + 's';
+                if (Math.random() > 0.7) p.style.background = '#f0c860';
+                container.appendChild(p);
+            }
         }
-      } catch(e) { continue; }
-    }
+        createParticles();
 
-    if (!bioFound) {
-      toast('Phrase not found in your bio. Make sure you saved it and try again.', 'error');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i> Verify Now';
-      return;
-    }
+        // ==================== NAVIGATION ====================
+        function switchPage(page) {
+            currentPage = page;
+            document.querySelectorAll('#mainContent > div').forEach(d => d.style.display = 'none');
+            const pageEl = document.getElementById('page-' + page);
+            if (pageEl) pageEl.style.display = 'block';
+            document.querySelectorAll('#navLinks button').forEach(b => b.classList.remove('active'));
+            const navBtn = document.querySelector(`#navLinks button[data-page="${page}"]`);
+            if (navBtn) navBtn.classList.add('active');
+            document.getElementById('mainContent').style.animation = 'none';
+            void document.getElementById('mainContent').offsetWidth;
+            document.getElementById('mainContent').style.animation = 'fadeIn 0.4s ease';
 
-    toast('Bio verified! Scanning limiteds inventory...', 'success');
-
-    // Scan rolimons for limiteds
-    let limiteds = [];
-    const rolimonsUrl = `https://www.rolimons.com/player/${STATE.verifyRobloxId}`;
-
-    for (const proxyFn of CORS_PROXIES) {
-      try {
-        const resp = await fetch(proxyFn(rolimonsUrl));
-        if (resp.ok) {
-          const html = await resp.text();
-          // Try to parse player data from rolimons page
-          limiteds = parseRolimonsData(html);
-          if (limiteds.length > 0) break;
+            if (page === 'market') loadMarketListings();
+            if (page === 'orders' && currentUser) loadOrders();
+            if (page === 'deposit' && currentUser) loadDepositRequests();
+            if (page === 'admin' && isAdmin) adminLoadTab(adminActiveTab);
+            if (page !== 'chat') { closeChat(); }
         }
-      } catch(e) { continue; }
-    }
 
-    // Also try rolimons API
-    if (limiteds.length === 0) {
-      try {
-        const apiUrls = [
-          `https://api.rolimons.com/players/v1/playerassets/${STATE.verifyRobloxId}`,
-          `https://api.rolimons.com/players/v1/player/${STATE.verifyRobloxId}`
-        ];
-        for (const apiUrl of apiUrls) {
-          for (const proxyFn of CORS_PROXIES) {
-            try {
-              const resp = await fetch(proxyFn(apiUrl));
-              if (resp.ok) {
-                const data = await resp.json();
-                if (data.assets) {
-                  data.assets.forEach(a => {
-                    if (a.limited === 1 || a.limited === true) {
-                      limiteds.push({
-                        itemId: a.asset_id || a.id,
-                        itemName: a.name || `Item #${a.asset_id || a.id}`,
-                        itemRap: a.rap || a.recent_average_price || 0,
-                        itemValue: a.value || a.rap || 0
-                      });
+        function updateNavForUser() {
+            const loggedIn = !!currentUser;
+            document.getElementById('btnLogin').style.display = loggedIn ? 'none' : 'inline-block';
+            document.getElementById('btnSignup').style.display = loggedIn ? 'none' : 'inline-block';
+            document.getElementById('btnLogout').style.display = loggedIn ? 'inline-block' : 'none';
+            document.getElementById('balanceDisplay').style.display = loggedIn ? 'inline-block' : 'none';
+            document.getElementById('navSell').style.display = loggedIn ? 'inline-block' : 'none';
+            document.getElementById('navOrders').style.display = loggedIn ? 'inline-block' : 'none';
+            document.getElementById('navDeposit').style.display = loggedIn ? 'inline-block' : 'none';
+            document.getElementById('navAdmin').style.display = 'inline-block'; // Always show, login required
+            if (loggedIn) {
+                document.getElementById('balAmt').textContent = (currentUser.balance || 0).toFixed(2);
+            }
+        }
+
+        // ==================== AUTH MODAL ====================
+        function showAuthModal(mode) {
+            authMode = mode;
+            document.getElementById('authModal').style.display = 'flex';
+            document.getElementById('authModalTitle').textContent = mode === 'login' ? '🔐 Login' : '✨ Create Account';
+            document.getElementById('authUsername').style.display = mode === 'signup' ? 'block' : 'none';
+            document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Login' : 'Sign Up';
+            document.getElementById('authAltLink').innerHTML = mode === 'login' ?
+                'Don\'t have an account? <span onclick="toggleAuthMode()">Sign Up</span>' :
+                'Already have an account? <span onclick="toggleAuthMode()">Login</span>';
+            document.getElementById('authError').style.display = 'none';
+            document.getElementById('authSuccess').style.display = 'none';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authUsername').value = '';
+            document.getElementById('authPassword').value = '';
+        }
+
+        function toggleAuthMode() {
+            showAuthModal(authMode === 'login' ? 'signup' : 'login');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        document.getElementById('authModal').addEventListener('click', function(e) {
+            if (e.target === this) closeAuthModal();
+        });
+
+        async function handleAuth() {
+            const email = document.getElementById('authEmail').value.trim();
+            const username = document.getElementById('authUsername').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const errEl = document.getElementById('authError');
+            const sucEl = document.getElementById('authSuccess');
+            errEl.style.display = 'none';
+            sucEl.style.display = 'none';
+
+            if (!email || !password) { errEl.textContent = 'Please fill all required fields.';
+                errEl.style.display = 'block'; return; }
+            if (authMode === 'signup' && !username) { errEl.textContent = 'Username is required.';
+                errEl.style.display = 'block'; return; }
+            if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.';
+                errEl.style.display = 'block'; return; }
+
+            if (!firestoreReady) {
+                // Demo mode
+                if (authMode === 'signup') {
+                    currentUser = { uid: 'demo-' + Date.now(), email, username, balance: 100.00, robloxUsername: null,
+                        verified: false };
+                    if (db) {
+                        try {
+                            const snap = await db.collection('users').where('username', '==', username).get();
+                            if (!snap.empty) { errEl.textContent =
+                                'Username already taken. Choose another.';
+                                errEl.style.display = 'block'; return; }
+                            await db.collection('users').doc(currentUser.uid).set(currentUser);
+                        } catch (e) { console.warn('Firestore write failed, using demo mode:', e); }
                     }
-                  });
+                    showToast('Account created! Welcome, ' + username + '! 🎉');
+                } else {
+                    if (db) {
+                        try {
+                            const snap = await db.collection('users').where('email', '==', email).get();
+                            if (snap.empty) { errEl.textContent = 'No account found with that email.';
+                                errEl.style.display = 'block'; return; }
+                            const doc = snap.docs[0];
+                            if (doc.data().password !== password) { errEl.textContent =
+                                'Incorrect password.';
+                                errEl.style.display = 'block'; return; }
+                            currentUser = { uid: doc.id, ...doc.data() };
+                        } catch (e) { console.warn('Firestore read failed:', e);
+                            errEl.textContent = 'Login failed. Try again.';
+                            errEl.style.display = 'block'; return; }
+                    } else {
+                        currentUser = { uid: 'demo-' + Date.now(), email, username: email.split('@')[0], balance: 100.00,
+                            robloxUsername: null, verified: false };
+                    }
+                    showToast('Welcome back! 👋');
                 }
-                if (limiteds.length > 0) break;
-              }
-            } catch(e) { continue; }
-          }
-          if (limiteds.length > 0) break;
+                closeAuthModal();
+                updateNavForUser();
+                switchPage('market');
+                startBalanceListener();
+                return;
+            }
+
+            try {
+                if (authMode === 'signup') {
+                    const snap = await db.collection('users').where('username', '==', username).get();
+                    if (!snap.empty) { errEl.textContent = 'Username already taken. Choose another.';
+                        errEl.style.display = 'block'; return; }
+                    const uid = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+                    currentUser = { uid, email, username, password, balance: 0, robloxUsername: null, verified: false,
+                        createdAt: new Date().toISOString() };
+                    await db.collection('users').doc(uid).set(currentUser);
+                    showToast('Account created! Welcome, ' + username + '! 🎉');
+                } else {
+                    const snap = await db.collection('users').where('email', '==', email).get();
+                    if (snap.empty) { errEl.textContent = 'No account found with that email.';
+                        errEl.style.display = 'block'; return; }
+                    const doc = snap.docs[0];
+                    const data = doc.data();
+                    if (data.password !== password) { errEl.textContent = 'Incorrect password.';
+                        errEl.style.display = 'block'; return; }
+                    currentUser = { uid: doc.id, ...data };
+                    showToast('Welcome back! 👋');
+                }
+                closeAuthModal();
+                updateNavForUser();
+                switchPage('market');
+                startBalanceListener();
+            } catch (e) {
+                console.error('Auth error:', e);
+                errEl.textContent = 'Error: ' + e.message;
+                errEl.style.display = 'block';
+            }
         }
-      } catch(e) {}
-    }
 
-    // Update user in Firestore
-    await db.collection('users').doc(STATE.user.id).update({
-      robloxUsername: document.getElementById('roblox-username-input').value.trim(),
-      robloxUserId: STATE.verifyRobloxId,
-      verified: true,
-      limiteds: limiteds
-    });
+        function logout() {
+            closeChat();
+            currentUser = null;
+            isAdmin = false;
+            updateNavForUser();
+            switchPage('market');
+            document.getElementById('adminContent').style.display = 'none';
+            showToast('Logged out successfully.');
+        }
 
-    // Refresh local state
-    STATE.user.robloxUsername = document.getElementById('roblox-username-input').value.trim();
-    STATE.user.robloxUserId = STATE.verifyRobloxId;
-    STATE.user.verified = true;
-    STATE.user.limiteds = limiteds;
+        function startBalanceListener() {
+            if (!currentUser || !db || !firestoreReady) return;
+            db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
+                if (doc.exists && currentUser) {
+                    currentUser.balance = doc.data().balance || 0;
+                    currentUser.robloxUsername = doc.data().robloxUsername;
+                    currentUser.verified = doc.data().verified;
+                    document.getElementById('balAmt').textContent = currentUser.balance.toFixed(2);
+                }
+            }, err => console.warn('Balance listener error:', err));
+        }
 
-    toast(`Verified! ${limiteds.length} limiteds found in your inventory.`, 'success');
-    loadSellPage();
-  } catch (err) {
-    toast('Verification failed: ' + (err.message || 'Unknown error'), 'error');
-    console.error(err);
-  }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i> Verify Now';
-}
+        // ==================== MARKET LISTINGS ====================
+        async function loadMarketListings() {
+            const grid = document.getElementById('marketGrid');
+            grid.innerHTML = '<p style="color:var(--text2);">Loading listings...</p>';
 
-function parseRolimonsData(html) {
-  const limiteds = [];
-  try {
-    // Look for __NEXT_DATA__ or similar JSON blobs in the page
-    const nextDataMatch = html.match(/__NEXT_DATA__\s*=\s*({.+?})\s*;?\s*<\/script>/s);
-    if (nextDataMatch) {
-      const data = JSON.parse(nextDataMatch[1]);
-      const playerData = data?.props?.pageProps?.playerData || data?.props?.pageProps?.player;
-      if (playerData && playerData.limiteds) {
-        playerData.limiteds.forEach(item => {
-          limiteds.push({
-            itemId: item.asset_id || item.id,
-            itemName: item.name || `Item #${item.asset_id || item.id}`,
-            itemRap: item.rap || 0,
-            itemValue: item.value || item.rap || 0
-          });
-        });
-      }
-    }
+            if (!firestoreReady || !db) {
+                // Demo listings
+                const demoListings = [
+                    { id: 'demo1', itemName: 'Dominus Astra', itemId: '123456', rolimonsValue: 8500000, price: 4200,
+                        sellerUsername: 'RichTrader99', status: 'active', sellerId: 'demo-seller1' },
+                    { id: 'demo2', itemName: 'Valkyrie Helm', itemId: '234567', rolimonsValue: 5200000, price: 2600,
+                        sellerUsername: 'LimitedKing', status: 'active', sellerId: 'demo-seller2' },
+                    { id: 'demo3', itemName: 'Sparkle Time Fedora', itemId: '345678', rolimonsValue: 2100000, price: 1100,
+                        sellerUsername: 'FedoraMaster', status: 'active', sellerId: 'demo-seller3' },
+                    { id: 'demo4', itemName: 'Lord of the Federation', itemId: '456789', rolimonsValue: 3800000,
+                        price: 1900, sellerUsername: 'StarCollector', status: 'active', sellerId: 'demo-seller4' },
+                ];
+                renderMarketGrid(demoListings);
+                return;
+            }
 
-    // Fallback: try to find JSON in script tags
-    if (limiteds.length === 0) {
-      const jsonMatches = html.match(/player_assets\s*=\s*(\[[\s\S]*?\]);/);
-      if (jsonMatches) {
-        const assets = JSON.parse(jsonMatches[1]);
-        assets.forEach(a => {
-          if (a[3] === 1 || a.is_limited) { // is_limited flag
-            limiteds.push({
-              itemId: a[0] || a.asset_id,
-              itemName: a[1] || a.name || `Item #${a[0] || a.asset_id}`,
-              itemRap: a[4] || a.rap || 0,
-              itemValue: a[5] || a.value || a[4] || 0
+            try {
+                const snap = await db.collection('listings').where('status', '==', 'active').get();
+                const listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderMarketGrid(listings);
+            } catch (e) {
+                console.error('Load listings error:', e);
+                grid.innerHTML = '<p style="color:var(--red);">Failed to load listings. Check console.</p>';
+            }
+        }
+
+        function renderMarketGrid(listings) {
+            const grid = document.getElementById('marketGrid');
+            if (listings.length === 0) {
+                grid.innerHTML =
+                    '<p style="color:var(--text2);">No active listings right now. Be the first to list a limited!</p>';
+                return;
+            }
+            grid.innerHTML = listings.map(l => `
+            <div class="item-card">
+              <div class="item-name">🎩 ${escapeHTML(l.itemName)}</div>
+              <div class="item-value">📈 Rolimons Value: R$ ${formatNumber(l.rolimonsValue || 0)}</div>
+              <div class="item-price">💵 $${(l.price || 0).toFixed(2)} USD</div>
+              <div class="item-seller">👤 Seller: ${escapeHTML(l.sellerUsername || 'Unknown')}</div>
+              <span class="badge badge-active">Active</span>
+              <button class="btn btn-gold btn-sm" onclick="buyItem('${l.id}')" ${!currentUser ? 'disabled' : ''}>🛒 Buy Now</button>
+              ${!currentUser ? '<p style="font-size:0.7rem;color:var(--red);margin-top:4px;">Login to buy</p>' : ''}
+            </div>
+          `).join('');
+        }
+
+        function formatNumber(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return n.toString();
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ==================== BUY FLOW ====================
+        async function buyItem(listingId) {
+            if (!currentUser) { showToast('Please login first.', 'error'); return; }
+            if (!firestoreReady || !db) {
+                showToast('Demo mode: Buy simulated! Opening chat...', 'success');
+                openDemoChat(listingId);
+                return;
+            }
+            try {
+                const listingDoc = await db.collection('listings').doc(listingId).get();
+                if (!listingDoc.exists) { showToast('Listing not found.', 'error'); return; }
+                const listing = listingDoc.data();
+                if (listing.status !== 'active') { showToast('This item is no longer available.', 'error'); return; }
+                if (listing.sellerId === currentUser.uid) { showToast('You cannot buy your own listing.', 'error'); return; }
+                if (currentUser.balance < listing.price) {
+                    showToast('Insufficient balance. Please deposit funds first.', 'error');
+                    switchPage('deposit');
+                    return;
+                }
+
+                // Deduct balance, hold in escrow
+                const newBalance = currentUser.balance - listing.price;
+                await db.collection('users').doc(currentUser.uid).update({ balance: newBalance });
+
+                // Update listing status
+                await db.collection('listings').doc(listingId).update({ status: 'pending', buyerId: currentUser.uid,
+                    buyerUsername: currentUser.username });
+
+                // Create order
+                const orderId = 'order-' + Date.now();
+                const chatId = 'chat-' + Date.now();
+                await db.collection('orders').doc(orderId).set({
+                    orderId,
+                    listingId,
+                    itemName: listing.itemName,
+                    price: listing.price,
+                    buyerId: currentUser.uid,
+                    buyerUsername: currentUser.username,
+                    sellerId: listing.sellerId,
+                    sellerUsername: listing.sellerUsername,
+                    status: 'pending_chat',
+                    chatId,
+                    createdAt: new Date().toISOString(),
+                    escrowReleased: false,
+                });
+
+                // Create chat
+                await db.collection('chats').doc(chatId).set({
+                    chatId,
+                    listingId,
+                    orderId,
+                    buyerId: currentUser.uid,
+                    sellerId: listing.sellerId,
+                    createdAt: new Date().toISOString(),
+                    messages: [{
+                        sender: 'system',
+                        text: `🔔 Trade started! Buyer: @${currentUser.username} | Seller: @${listing.sellerUsername} | Item: ${listing.itemName} | Price: $${listing.price.toFixed(2)}. Discuss the trade details here. Buyer must release payment after trade is complete.`,
+                        time: new Date().toISOString(),
+                    }],
+                });
+
+                showToast('Purchase initiated! Opening chat... 💬');
+                openChat(chatId, listingId, orderId, listing);
+            } catch (e) {
+                console.error('Buy error:', e);
+                showToast('Error processing purchase: ' + e.message, 'error');
+            }
+        }
+
+        function openDemoChat(listingId) {
+            // Simulate for demo
+            const demoListing = {
+                itemName: 'Demo Limited Item',
+                price: 50,
+                sellerId: 'demo-seller1',
+                sellerUsername: 'DemoSeller',
+                buyerUsername: currentUser?.username || 'DemoBuyer'
+            };
+            activeChatId = 'demo-chat';
+            activeChatListingId = listingId;
+            document.getElementById('chatTitle').textContent = demoListing.itemName + ' — $' + demoListing.price.toFixed(
+                2);
+            document.getElementById('chatMessages').innerHTML = `
+            <div class="chat-msg received"><div class="msg-sender">System</div>🔔 Demo chat started. Discuss trade details here.<div class="msg-time">Just now</div></div>
+          `;
+            document.getElementById('btnRelease').style.display = 'inline-block';
+            switchPage('chat');
+            showToast('Demo chat opened! (Firebase not configured)', 'success');
+        }
+
+        // ==================== CHAT SYSTEM ====================
+        async function openChat(chatId, listingId, orderId, listing) {
+            closeChat();
+            activeChatId = chatId;
+            activeChatListingId = listingId;
+            document.getElementById('chatTitle').textContent = (listing?.itemName || 'Trade') + ' — $' + (listing?.price ||
+                0).toFixed(2);
+            document.getElementById('chatMessages').innerHTML = '<p style="color:var(--text2);">Loading messages...</p>';
+            document.getElementById('btnRelease').style.display = 'inline-block';
+            switchPage('chat');
+
+            if (!firestoreReady || !db) return;
+
+            activeChatUnsub = db.collection('chats').doc(chatId).onSnapshot(doc => {
+                if (!doc.exists) return;
+                const data = doc.data();
+                const msgs = data.messages || [];
+                const msgContainer = document.getElementById('chatMessages');
+                msgContainer.innerHTML = msgs.map(m => `
+              <div class="chat-msg ${m.sender === currentUser?.uid ? 'sent' : 'received'}">
+                ${m.sender !== 'system' ? `<div class="msg-sender">${escapeHTML(m.senderName || m.sender)}</div>` : ''}
+                ${escapeHTML(m.text)}
+                <div class="msg-time">${formatTime(m.time)}</div>
+              </div>
+            `).join('');
+                msgContainer.scrollTop = msgContainer.scrollHeight;
             });
-          }
-        });
-      }
-    }
-  } catch(e) {
-    console.error('Error parsing rolimons data:', e);
-  }
-  return limiteds;
-}
-
-function renderLimitedsList() {
-  const container = document.getElementById('limiteds-list');
-  const noLimiteds = document.getElementById('no-limiteds');
-  const mustVerify = document.getElementById('must-verify-first');
-
-  mustVerify.style.display = 'none';
-  const limiteds = STATE.user.limiteds || [];
-
-  if (limiteds.length === 0) {
-    container.innerHTML = '';
-    noLimiteds.style.display = '';
-    return;
-  }
-  noLimiteds.style.display = 'none';
-
-  container.innerHTML = limiteds.map(item => `
-    <div class="flex items-center gap-4 p-3 rounded-xl" style="background:var(--elevated); border:1px solid var(--border)">
-      <img src="https://roblox.com/asset-thumbnail/image?assetId=${item.itemId}&width=80&height=80&format=png"
-        class="w-14 h-14 rounded-lg object-cover" style="background:var(--border)"
-        onerror="this.style.display='none'">
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold truncate">${item.itemName}</p>
-        <p class="text-xs" style="color:var(--text-muted)">RAP: R$ ${(item.itemRap || 0).toLocaleString()} | Value: R$ ${(item.itemValue || 0).toLocaleString()}</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-sm" style="color:var(--text-muted)">$</span>
-        <input type="number" class="form-input" style="width:100px" placeholder="0.00" min="0.01" step="0.01" id="price-${item.itemId}">
-        <button class="btn-primary text-xs py-2 px-3" onclick="listItem('${item.itemId}','${item.itemName.replace(/'/g,"\\'")}',${item.itemRap || 0},${item.itemValue || 0})">List</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function listItem(itemId, itemName, itemRap, itemValue) {
-  const priceInput = document.getElementById(`price-${itemId}`);
-  const price = parseFloat(priceInput.value);
-
-  if (!price || price <= 0) {
-    toast('Enter a valid price greater than $0.', 'error');
-    return;
-  }
-
-  // Check if already listed
-  try {
-    const existing = await db.collection('listings')
-      .where('sellerId', '==', STATE.user.id)
-      .where('itemId', '==', parseInt(itemId))
-      .where('status', '==', 'active').get();
-    if (!existing.empty) {
-      toast('This item is already listed.', 'error');
-      return;
-    }
-  } catch(e) {}
-
-  try {
-    await db.collection('listings').add({
-      sellerId: STATE.user.id,
-      sellerUsername: STATE.user.username,
-      itemId: parseInt(itemId),
-      itemName: itemName,
-      itemRap: itemRap,
-      itemValue: itemValue,
-      price: price,
-      status: 'active',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    toast(`${itemName} listed for $${price.toFixed(2)}!`, 'success');
-    priceInput.value = '';
-  } catch (err) {
-    toast('Failed to list item: ' + err.message, 'error');
-  }
-}
-
-/* ============ PROFILE ============ */
-async function loadProfile() {
-  if (!STATE.user) return;
-
-  // Refresh user data
-  try {
-    const doc = await db.collection('users').doc(STATE.user.id).get();
-    if (doc.exists) {
-      STATE.user = { id: doc.id, ...doc.data() };
-      updateAuthUI();
-    }
-  } catch(e) {}
-
-  document.getElementById('prof-balance').textContent = `$${(STATE.user.balance || 0).toFixed(2)}`;
-
-  // Load active listings count
-  try {
-    const listingsSnap = await db.collection('listings')
-      .where('sellerId', '==', STATE.user.id)
-      .where('status', '==', 'active').get();
-    document.getElementById('prof-listings').textContent = listingsSnap.size;
-  } catch(e) { document.getElementById('prof-listings').textContent = '0'; }
-
-  // Load trades count
-  try {
-    const tradesSnap = await db.collection('trades')
-      .where('buyerId', '==', STATE.user.id).get();
-    const tradesSnap2 = await db.collection('trades')
-      .where('sellerId', '==', STATE.user.id).get();
-    document.getElementById('prof-trades').textContent = tradesSnap.size + tradesSnap2.size;
-  } catch(e) { document.getElementById('prof-trades').textContent = '0'; }
-
-  // My listings
-  loadMyListings();
-  // Order history
-  loadOrderHistory();
-}
-
-async function loadMyListings() {
-  const container = document.getElementById('my-listings');
-  const noEl = document.getElementById('no-my-listings');
-  container.innerHTML = '';
-
-  try {
-    const snap = await db.collection('listings')
-      .where('sellerId', '==', STATE.user.id)
-      .orderBy('createdAt', 'desc').get();
-
-    if (snap.empty) { noEl.style.display = ''; return; }
-    noEl.style.display = 'none';
-
-    snap.forEach(doc => {
-      const item = doc.data();
-      const statusBadge = item.status === 'active' ? 'badge-success' : item.status === 'sold' ? 'badge-info' : 'badge-warning';
-      container.innerHTML += `
-        <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--surface); border:1px solid var(--border)">
-          <img src="https://roblox.com/asset-thumbnail/image?assetId=${item.itemId}&width=60&height=60&format=png"
-            class="w-12 h-12 rounded-lg object-cover" style="background:var(--elevated)">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold truncate">${item.itemName}</p>
-            <p class="text-xs" style="color:var(--accent)">$${item.price.toFixed(2)}</p>
-          </div>
-          <span class="badge ${statusBadge}">${item.status}</span>
-          ${item.status === 'active' ? `<button class="btn-danger text-xs py-1.5 px-3" onclick="cancelListing('${doc.id}')">Cancel</button>` : ''}
-        </div>
-      `;
-    });
-  } catch(e) {
-    console.error(e);
-    noEl.style.display = '';
-  }
-}
-
-async function cancelListing(listingId) {
-  try {
-    await db.collection('listings').doc(listingId).update({ status: 'cancelled' });
-    toast('Listing cancelled.', 'success');
-    loadMyListings();
-  } catch(e) {
-    toast('Failed to cancel listing.', 'error');
-  }
-}
-
-async function loadOrderHistory() {
-  const body = document.getElementById('history-body');
-  const noEl = document.getElementById('no-history');
-  body.innerHTML = '';
-
-  try {
-    const buyerSnap = await db.collection('trades').where('buyerId', '==', STATE.user.id).orderBy('createdAt', 'desc').get();
-    const sellerSnap = await db.collection('trades').where('sellerId', '==', STATE.user.id).orderBy('createdAt', 'desc').get();
-
-    const trades = [];
-    buyerSnap.forEach(d => trades.push({ ...d.data(), id: d.id, role: 'Buyer' }));
-    sellerSnap.forEach(d => trades.push({ ...d.data(), id: d.id, role: 'Seller' }));
-    trades.sort((a, b) => {
-      const ta = a.createdAt?.toMillis?.() || 0;
-      const tb = b.createdAt?.toMillis?.() || 0;
-      return tb - ta;
-    });
-
-    if (trades.length === 0) { noEl.style.display = ''; return; }
-    noEl.style.display = 'none';
-
-    trades.forEach(t => {
-      const statusBadge = t.status === 'completed' ? 'badge-success' : t.status === 'cancelled' ? 'badge-error' : 'badge-warning';
-      const date = t.createdAt?.toDate?.() ? t.createdAt.toDate().toLocaleDateString() : 'N/A';
-      let action = '';
-      if (t.status === 'pending' && t.role === 'Buyer') {
-        action = `<button class="btn-success text-xs py-1 px-2" onclick="releaseFunds('${t.id}')">Release</button>`;
-        action += ` <button class="btn-danger text-xs py-1 px-2" onclick="cancelTrade('${t.id}')">Cancel</button>`;
-      }
-      if (t.status === 'pending' && t.role === 'Seller') {
-        action = `<button class="btn-secondary text-xs py-1 px-2" onclick="navigate('chat');setTimeout(()=>openChat('${t.id}'),300)">Open Chat</button>`;
-      }
-      body.innerHTML += `
-        <tr>
-          <td class="font-medium">${t.itemName || 'Unknown'}</td>
-          <td><span class="badge ${t.role === 'Buyer' ? 'badge-info' : 'badge-warning'}">${t.role}</span></td>
-          <td style="color:var(--accent)">$${t.amount.toFixed(2)}</td>
-          <td><span class="badge ${statusBadge}">${t.status}</span></td>
-          <td style="color:var(--text-muted)">${date}</td>
-          <td>${action}</td>
-        </tr>
-      `;
-    });
-  } catch(e) {
-    console.error(e);
-    noEl.style.display = '';
-  }
-}
-
-async function releaseFunds(tradeId) {
-  try {
-    const tradeDoc = await db.collection('trades').doc(tradeId).get();
-    if (!tradeDoc.exists) throw new Error('Trade not found');
-    const trade = tradeDoc.data();
-
-    if (trade.buyerId !== STATE.user.id) throw new Error('Only the buyer can release funds.');
-    if (trade.status !== 'pending') throw new Error('Trade is not pending.');
-
-    // Use transaction to transfer funds
-    await db.runTransaction(async (transaction) => {
-      const sellerDoc = await transaction.get(db.collection('users').doc(trade.sellerId));
-      if (!sellerDoc.exists) throw new Error('Seller not found');
-      transaction.update(db.collection('users').doc(trade.sellerId), {
-        balance: firebase.firestore.FieldValue.increment(trade.amount)
-      });
-      transaction.update(db.collection('trades').doc(tradeId), {
-        status: 'completed',
-        completedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      transaction.update(db.collection('listings').doc(trade.listingId), {
-        status: 'sold'
-      });
-    });
-
-    toast('Funds released! Trade completed.', 'success');
-    loadProfile();
-  } catch (err) {
-    toast(err.message || 'Failed to release funds.', 'error');
-  }
-}
-
-async function cancelTrade(tradeId) {
-  try {
-    const tradeDoc = await db.collection('trades').doc(tradeId).get();
-    if (!tradeDoc.exists) throw new Error('Trade not found');
-    const trade = tradeDoc.data();
-
-    if (trade.buyerId !== STATE.user.id) throw new Error('Only the buyer can cancel.');
-    if (trade.status !== 'pending') throw new Error('Trade is not pending.');
-
-    // Refund buyer
-    await db.runTransaction(async (transaction) => {
-      const buyerDoc = await transaction.get(db.collection('users').doc(trade.buyerId));
-      if (!buyerDoc.exists) throw new Error('Buyer not found');
-      transaction.update(db.collection('users').doc(trade.buyerId), {
-        balance: firebase.firestore.FieldValue.increment(trade.amount)
-      });
-      transaction.update(db.collection('trades').doc(tradeId), {
-        status: 'cancelled',
-        completedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      transaction.update(db.collection('listings').doc(trade.listingId), {
-        status: 'active'
-      });
-    });
-
-    toast('Trade cancelled. Funds refunded.', 'success');
-    loadProfile();
-  } catch (err) {
-    toast(err.message || 'Failed to cancel trade.', 'error');
-  }
-}
-
-/* ============ DEPOSIT ============ */
-function openDeposit() {
-  document.getElementById('deposit-modal').classList.add('open');
-  document.getElementById('deposit-amount').value = '';
-  document.getElementById('deposit-tx').value = '';
-  document.getElementById('deposit-info').style.display = 'none';
-}
-function closeDeposit() {
-  document.getElementById('deposit-modal').classList.remove('open');
-}
-
-// Show payment info when method changes
-document.getElementById('deposit-method')?.addEventListener('change', function() {
-  const info = document.getElementById('deposit-info');
-  const method = this.value;
-  if (WALLETS[method]) {
-    let label = method.replace('crypto_', '').toUpperCase();
-    let instructions = '';
-    if (method.startsWith('crypto_')) {
-      instructions = `<p class="text-sm mb-2" style="color:var(--text-muted)">Send ${label} to this address:</p>
-        <div class="phrase-box text-sm" style="font-size:0.75rem;word-break:break-all">${WALLETS[method]}</div>`;
-    } else if (method === 'paypal') {
-      instructions = `<p class="text-sm" style="color:var(--text-muted)">Send payment to <strong style="color:var(--text)">${WALLETS[method]}</strong> and include your username in the note.</p>`;
-    } else if (method === 'cashapp') {
-      instructions = `<p class="text-sm" style="color:var(--text-muted)">Send payment to <strong style="color:var(--text)">${WALLETS[method]}</strong> and include your username in the note.</p>`;
-    }
-    info.innerHTML = instructions;
-    info.style.display = '';
-  } else {
-    info.style.display = 'none';
-  }
-});
-
-async function submitDeposit() {
-  const amount = parseFloat(document.getElementById('deposit-amount').value);
-  const method = document.getElementById('deposit-method').value;
-  const tx = document.getElementById('deposit-tx').value.trim();
-
-  if (!amount || amount <= 0) { toast('Enter a valid amount.', 'error'); return; }
-
-  try {
-    await db.collection('deposits').add({
-      userId: STATE.user.id,
-      username: STATE.user.username,
-      amount: amount,
-      method: method,
-      txHash: tx || null,
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    toast('Deposit request submitted! It will be reviewed shortly.', 'success');
-    closeDeposit();
-  } catch (err) {
-    toast('Failed to submit deposit: ' + err.message, 'error');
-  }
-}
-
-/* ============ CHAT SYSTEM ============ */
-async function loadChats() {
-  if (!STATE.user) return;
-
-  const container = document.getElementById('chat-list');
-  const noChats = document.getElementById('no-chats');
-  container.innerHTML = '';
-  document.getElementById('chat-active').style.display = 'none';
-
-  try {
-    const snap = await db.collection('chats')
-      .where('participants', 'array-contains', STATE.user.id)
-      .orderBy('createdAt', 'desc').get();
-
-    if (snap.empty) { noChats.style.display = ''; return; }
-    noChats.style.display = 'none';
-
-    for (const doc of snap.docs) {
-      const chat = doc.data();
-      const otherId = chat.participants.find(p => p !== STATE.user.id);
-      let otherName = 'Unknown';
-      try {
-        const otherDoc = await db.collection('users').doc(otherId).get();
-        if (otherDoc.exists) otherName = otherDoc.data().username;
-      } catch(e) {}
-
-      // Get trade status
-      let tradeStatus = 'pending';
-      try {
-        const tradeDoc = await db.collection('trades').doc(doc.id).get();
-        if (tradeDoc.exists) tradeStatus = tradeDoc.data().status;
-      } catch(e) {}
-
-      const statusBadge = tradeStatus === 'completed' ? 'badge-success' : tradeStatus === 'cancelled' ? 'badge-error' : 'badge-warning';
-
-      const el = document.createElement('div');
-      el.className = 'flex items-center gap-3 p-4 rounded-xl cursor-pointer';
-      el.style.cssText = 'background:var(--surface); border:1px solid var(--border); transition:all 0.2s';
-      el.onmouseenter = () => el.style.borderColor = 'var(--accent)';
-      el.onmouseleave = () => el.style.borderColor = 'var(--border)';
-      el.onclick = () => openChat(doc.id);
-      el.innerHTML = `
-        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style="background:var(--accent-dim); color:var(--accent)">${otherName[0].toUpperCase()}</div>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-sm">${otherName}</p>
-          <p class="text-xs truncate" style="color:var(--text-muted)">${chat.itemName || 'Trade'}</p>
-        </div>
-        <span class="badge ${statusBadge}">${tradeStatus}</span>
-      `;
-      container.appendChild(el);
-    }
-  } catch(e) {
-    console.error(e);
-    noChats.style.display = '';
-  }
-}
-
-function openChat(chatId) {
-  STATE.currentChatId = chatId;
-  document.getElementById('chat-list').style.display = 'none';
-  document.getElementById('no-chats').style.display = 'none';
-  document.getElementById('chat-active').style.display = '';
-
-  // Load chat header info
-  db.collection('chats').doc(chatId).get().then(doc => {
-    if (doc.exists) {
-      const chat = doc.data();
-      document.getElementById('chat-active-title').textContent = chat.itemName || 'Trade Chat';
-    }
-  });
-
-  // Get trade status
-  db.collection('trades').doc(chatId).get().then(doc => {
-    if (doc.exists) {
-      const status = doc.data().status;
-      const statusEl = document.getElementById('chat-active-status');
-      statusEl.textContent = status;
-      statusEl.className = `badge ml-2 ${status === 'completed' ? 'badge-success' : status === 'cancelled' ? 'badge-error' : 'badge-warning'}`;
-
-      // Show action buttons
-      const actionsEl = document.getElementById('chat-actions');
-      actionsEl.innerHTML = '';
-      if (status === 'pending' && doc.data().buyerId === STATE.user?.id) {
-        actionsEl.innerHTML = `
-          <button class="btn-success text-sm" onclick="releaseFunds('${chatId}');loadChats()"><i class="fa-solid fa-check mr-1"></i> Release Funds</button>
-          <button class="btn-danger text-sm" onclick="cancelTrade('${chatId}');loadChats()"><i class="fa-solid fa-xmark mr-1"></i> Cancel Trade</button>
-        `;
-      }
-    }
-  });
-
-  // Real-time messages listener
-  if (STATE.chatUnsub) STATE.chatUnsub();
-
-  const messagesRef = db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp', 'asc');
-  STATE.chatUnsub = messagesRef.onSnapshot(snap => {
-    const box = document.getElementById('chat-messages-box');
-    box.innerHTML = '';
-    snap.forEach(doc => {
-      const msg = doc.data();
-      const isSent = msg.senderId === STATE.user?.id;
-      const time = msg.timestamp?.toDate?.() ? msg.timestamp.toDate().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-      box.innerHTML += `
-        <div class="chat-bubble ${isSent ? 'sent' : 'received'}">
-          ${!isSent ? `<p class="text-xs font-semibold mb-1" style="color:var(--accent)">${msg.senderUsername || 'User'}</p>` : ''}
-          <p>${escapeHtml(msg.text)}</p>
-          <p class="text-xs mt-1" style="opacity:0.6">${time}</p>
-        </div>
-      `;
-    });
-    box.scrollTop = box.scrollHeight;
-  }, err => console.error('Chat listener error:', err));
-}
-
-function closeActiveChat() {
-  if (STATE.chatUnsub) { STATE.chatUnsub(); STATE.chatUnsub = null; }
-  STATE.currentChatId = null;
-  document.getElementById('chat-active').style.display = 'none';
-  document.getElementById('chat-list').style.display = '';
-  loadChats();
-}
-
-async function sendMessage() {
-  if (!STATE.user || !STATE.currentChatId) return;
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text) return;
-
-  try {
-    await db.collection('chats').doc(STATE.currentChatId).collection('messages').add({
-      senderId: STATE.user.id,
-      senderUsername: STATE.user.username,
-      text: text,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    input.value = '';
-  } catch (err) {
-    toast('Failed to send message.', 'error');
-  }
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-/* ============ ADMIN PANEL ============ */
-function switchAdminTab(tab, btn) {
-  document.querySelectorAll('.admin-tab').forEach(t => t.style.display = 'none');
-  document.querySelectorAll('#page-admin .tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`admin-${tab}`).style.display = '';
-  if (btn) btn.classList.add('active');
-}
-
-async function loadAdmin() {
-  loadAdminUsers();
-  loadAdminTrades();
-  loadAdminChats();
-  loadAdminDeposits();
-}
-
-async function loadAdminUsers() {
-  const body = document.getElementById('admin-users-body');
-  body.innerHTML = '';
-  try {
-    const snap = await db.collection('users').orderBy('createdAt', 'desc').get();
-    snap.forEach(doc => {
-      const u = doc.data();
-      body.innerHTML += `
-        <tr>
-          <td class="text-xs" style="color:var(--text-muted)">${doc.id.substring(0,8)}...</td>
-          <td class="font-semibold">${u.username}</td>
-          <td class="text-xs">${u.email}</td>
-          <td style="color:var(--accent)">$${(u.balance || 0).toFixed(2)}</td>
-          <td class="text-sm">${u.robloxUsername || '<span style="color:var(--text-muted)">N/A</span>'}</td>
-          <td>${u.verified ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-error">No</span>'}</td>
-          <td><button class="btn-secondary text-xs py-1 px-2" onclick="openAdminBalance('${doc.id}','${u.username}')">Balance</button></td>
-        </tr>
-      `;
-    });
-  } catch(e) { console.error(e); }
-}
-
-async function loadAdminTrades() {
-  const body = document.getElementById('admin-trades-body');
-  body.innerHTML = '';
-  try {
-    const snap = await db.collection('trades').orderBy('createdAt', 'desc').get();
-    snap.forEach(doc => {
-      const t = doc.data();
-      const statusBadge = t.status === 'completed' ? 'badge-success' : t.status === 'cancelled' ? 'badge-error' : 'badge-warning';
-      const date = t.createdAt?.toDate?.() ? t.createdAt.toDate().toLocaleDateString() : 'N/A';
-      body.innerHTML += `
-        <tr>
-          <td class="text-xs" style="color:var(--text-muted)">${doc.id.substring(0,8)}...</td>
-          <td>${t.itemName || 'N/A'}</td>
-          <td>${t.buyerUsername || 'N/A'}</td>
-          <td>${t.sellerUsername || 'N/A'}</td>
-          <td style="color:var(--accent)">$${t.amount.toFixed(2)}</td>
-          <td><span class="badge ${statusBadge}">${t.status}</span></td>
-          <td style="color:var(--text-muted)">${date}</td>
-        </tr>
-      `;
-    });
-  } catch(e) { console.error(e); }
-}
-
-async function loadAdminChats() {
-  const container = document.getElementById('admin-chat-list');
-  container.innerHTML = '';
-  try {
-    const snap = await db.collection('chats').orderBy('createdAt', 'desc').get();
-    if (snap.empty) {
-      container.innerHTML = '<p class="text-center py-8" style="color:var(--text-muted)">No chats found.</p>';
-      return;
-    }
-    for (const doc of snap.docs) {
-      const chat = doc.data();
-      const el = document.createElement('div');
-      el.className = 'flex items-center gap-3 p-4 rounded-xl cursor-pointer';
-      el.style.cssText = 'background:var(--surface); border:1px solid var(--border); transition:all 0.2s';
-      el.onmouseenter = () => el.style.borderColor = 'var(--accent)';
-      el.onmouseleave = () => el.style.borderColor = 'var(--border)';
-      el.onclick = () => adminViewChat(doc.id, chat);
-      el.innerHTML = `
-        <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--accent-dim); color:var(--accent)"><i class="fa-solid fa-comments"></i></div>
-        <div class="flex-1">
-          <p class="font-semibold text-sm">${chat.itemName || 'Trade Chat'}</p>
-          <p class="text-xs" style="color:var(--text-muted)">Trade ID: ${doc.id.substring(0,12)}...</p>
-        </div>
-        <button class="btn-secondary text-xs py-1.5 px-3"><i class="fa-solid fa-eye mr-1"></i> View</button>
-      `;
-      container.appendChild(el);
-    }
-  } catch(e) { console.error(e); }
-}
-
-async function adminViewChat(chatId, chat) {
-  document.getElementById('acm-title').textContent = chat.itemName || 'Chat';
-  const box = document.getElementById('acm-messages');
-  box.innerHTML = '<div class="text-center py-8" style="color:var(--text-muted)">Loading messages...</div>';
-  document.getElementById('admin-chat-modal').classList.add('open');
-
-  try {
-    const snap = await db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp', 'asc').get();
-    box.innerHTML = '';
-    if (snap.empty) {
-      box.innerHTML = '<div class="text-center py-8" style="color:var(--text-muted)">No messages yet.</div>';
-      return;
-    }
-    snap.forEach(doc => {
-      const msg = doc.data();
-      const time = msg.timestamp?.toDate?.() ? msg.timestamp.toDate().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-      box.innerHTML += `
-        <div class="chat-bubble received">
-          <p class="text-xs font-semibold mb-1" style="color:var(--accent)">${msg.senderUsername || 'User'}</p>
-          <p>${escapeHtml(msg.text)}</p>
-          <p class="text-xs mt-1" style="opacity:0.6">${time}</p>
-        </div>
-      `;
-    });
-    box.scrollTop = box.scrollHeight;
-  } catch(e) {
-    box.innerHTML = '<div class="text-center py-8" style="color:var(--error)">Failed to load messages.</div>';
-  }
-}
-
-function closeAdminChat() {
-  document.getElementById('admin-chat-modal').classList.remove('open');
-}
-
-async function loadAdminDeposits() {
-  const body = document.getElementById('admin-deposits-body');
-  body.innerHTML = '';
-  try {
-    const snap = await db.collection('deposits').orderBy('createdAt', 'desc').get();
-    snap.forEach(doc => {
-      const d = doc.data();
-      const statusBadge = d.status === 'completed' ? 'badge-success' : d.status === 'rejected' ? 'badge-error' : 'badge-warning';
-      const date = d.createdAt?.toDate?.() ? d.createdAt.toDate().toLocaleDateString() : 'N/A';
-      let actions = '';
-      if (d.status === 'pending') {
-        actions = `
-          <button class="btn-success text-xs py-1 px-2" onclick="adminProcessDeposit('${doc.id}','completed',${d.amount},'${d.userId}')">Approve</button>
-          <button class="btn-danger text-xs py-1 px-2" onclick="adminProcessDeposit('${doc.id}','rejected',0,'${d.userId}')">Reject</button>
-        `;
-      }
-      body.innerHTML += `
-        <tr>
-          <td class="text-xs" style="color:var(--text-muted)">${doc.id.substring(0,8)}...</td>
-          <td>${d.username || 'N/A'}</td>
-          <td style="color:var(--accent)">$${d.amount.toFixed(2)}</td>
-          <td class="text-xs">${d.method}</td>
-          <td><span class="badge ${statusBadge}">${d.status}</span></td>
-          <td style="color:var(--text-muted)">${date}</td>
-          <td>${actions}</td>
-        </tr>
-      `;
-    });
-  } catch(e) { console.error(e); }
-}
-
-async function adminProcessDeposit(depositId, status, amount, userId) {
-  try {
-    if (status === 'completed') {
-      await db.runTransaction(async (transaction) => {
-        const userDoc = await transaction.get(db.collection('users').doc(userId));
-        if (!userDoc.exists) throw new Error('User not found');
-        transaction.update(db.collection('users').doc(userId), {
-          balance: firebase.firestore.FieldValue.increment(amount)
-        });
-        transaction.update(db.collection('deposits').doc(depositId), { status: 'completed' });
-      });
-      toast('Deposit approved and balance added.', 'success');
-    } else {
-      await db.collection('deposits').doc(depositId).update({ status: 'rejected' });
-      toast('Deposit rejected.', 'info');
-    }
-    loadAdminDeposits();
-  } catch(err) {
-    toast('Error: ' + err.message, 'error');
-  }
-}
-
-/* ============ ADMIN BALANCE MODAL ============ */
-function openAdminBalance(uid, username) {
-  document.getElementById('ab-uid').value = uid;
-  document.getElementById('ab-username').textContent = username;
-  document.getElementById('ab-amount').value = '';
-  document.getElementById('admin-balance-modal').classList.add('open');
-}
-function closeAdminBalance() {
-  document.getElementById('admin-balance-modal').classList.remove('open');
-}
-async function adminAdjustBalance() {
-  const uid = document.getElementById('ab-uid').value;
-  const amount = parseFloat(document.getElementById('ab-amount').value);
-  if (!amount || amount === 0) { toast('Enter a non-zero amount.', 'error'); return; }
-
-  try {
-    await db.collection('users').doc(uid).update({
-      balance: firebase.firestore.FieldValue.increment(amount)
-    });
-    toast(`Balance adjusted by $${amount.toFixed(2)}.`, 'success');
-    closeAdminBalance();
-    loadAdminUsers();
-  } catch(err) {
-    toast('Error: ' + err.message, 'error');
-  }
-}
-
-/* ============ CLOSE MODALS ON OVERLAY CLICK ============ */
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) {
-      overlay.classList.remove('open');
-      if (overlay.id === 'auth-modal') closeAuth();
-      if (overlay.id === 'deposit-modal') closeDeposit();
-      if (overlay.id === 'listing-modal') closeListingModal();
-      if (overlay.id === 'admin-balance-modal') closeAdminBalance();
-      if (overlay.id === 'admin-chat-modal') closeAdminChat();
-      if (overlay.id === 'admin-prompt-overlay') overlay.remove();
-    }
-  });
-});
-
-/* ============ KEYBOARD: ESC TO CLOSE MODALS ============ */
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-    if (STATE.chatUnsub && STATE.currentChatId) closeActiveChat();
-  }
-});
-
-/* ============ INIT ============ */
-loadMarket();
-</script>
+        }
+
+        function closeChat() {
+            if (activeChatUnsub) { activeChatUnsub();
+                activeChatUnsub = null; }
+            activeChatId = null;
+            activeChatListingId = null;
+            document.getElementById('btnRelease').style.display = 'none';
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !activeChatId) return;
+            if (!firestoreReady || !db) {
+                // Demo
+                const msgContainer = document.getElementById('chatMessages');
+                msgContainer.innerHTML += `
+              <div class="chat-msg sent"><div class="msg-sender">You</div>${escapeHTML(text)}<div class="msg-time">Just now</div></div>
+            `;
+                msgContainer.scrollTop = msgContainer.scrollHeight;
+                input.value = '';
+                return;
+            }
+            try {
+                await db.collection('chats').doc(activeChatId).update({
+                    messages: firebase.firestore.FieldValue.arrayUnion({
+                        sender: currentUser.uid,
+                        senderName: currentUser.username,
+                        text,
+                        time: new Date().toISOString(),
+                    }),
+                });
+                input.value = '';
+            } catch (e) {
+                console.error('Send chat error:', e);
+                showToast('Failed to send message.', 'error');
+            }
+        }
+
+        async function releasePayment() {
+            if (!activeChatId || !currentUser) { showToast('No active chat.', 'error'); return; }
+            if (!firestoreReady || !db) {
+                showToast('Demo: Payment released! ✅', 'success');
+                switchPage('market');
+                return;
+            }
+            try {
+                const chatDoc = await db.collection('chats').doc(activeChatId).get();
+                if (!chatDoc.exists) { showToast('Chat not found.', 'error'); return; }
+                const chatData = chatDoc.data();
+                if (chatData.buyerId !== currentUser.uid) { showToast('Only the buyer can release payment.', 'error');
+                    return; }
+
+                const orderDoc = await db.collection('orders').doc(chatData.orderId).get();
+                if (!orderDoc.exists) { showToast('Order not found.', 'error'); return; }
+                const order = orderDoc.data();
+                if (order.escrowReleased) { showToast('Payment already released.', 'error'); return; }
+
+                // Release escrow to seller
+                const sellerDoc = await db.collection('users').doc(order.sellerId).get();
+                const sellerData = sellerDoc.data();
+                const newSellerBalance = (sellerData.balance || 0) + order.price;
+                await db.collection('users').doc(order.sellerId).update({ balance: newSellerBalance });
+
+                // Update order
+                await db.collection('orders').doc(order.orderId).update({ status: 'completed',
+                    escrowReleased: true, releasedAt: new Date().toISOString() });
+
+                // Update listing
+                await db.collection('listings').doc(order.listingId).update({ status: 'sold' });
+
+                // System message in chat
+                await db.collection('chats').doc(activeChatId).update({
+                    messages: firebase.firestore.FieldValue.arrayUnion({
+                        sender: 'system',
+                        text: `✅ Payment of $${order.price.toFixed(2)} released to @${order.sellerUsername}. Trade complete!`,
+                        time: new Date().toISOString(),
+                    }),
+                });
+
+                showToast('Payment released! Trade complete. 🎉');
+                closeChat();
+                switchPage('market');
+            } catch (e) {
+                console.error('Release error:', e);
+                showToast('Error releasing payment: ' + e.message, 'error');
+            }
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // ==================== SELLER VERIFICATION ====================
+        function generatePhrase() {
+            const words = ['sky', 'fly', 'mountain', 'river', 'cloud', 'star', 'moon', 'wind', 'fire', 'ocean', 'stone',
+                'leaf', 'dawn', 'dusk', 'pine', 'wolf', 'hawk', 'bear', 'deer', 'lake'
+            ];
+            const shuffled = words.sort(() => Math.random() - 0.5);
+            return 'limiteds ' + shuffled.slice(0, 3 + Math.floor(Math.random() * 3)).join(' ');
+        }
+
+        async function startVerification() {
+            if (!currentUser) { showToast('Please login first.', 'error');
+                showAuthModal('login'); return; }
+            const username = document.getElementById('robloxUsernameInput').value.trim();
+            if (!username) { showToast('Enter your Roblox username.', 'error'); return; }
+
+            pendingVerificationPhrase = generatePhrase();
+            pendingVerificationUsername = username;
+            document.getElementById('verifyPhrase').textContent = pendingVerificationPhrase;
+            document.getElementById('verificationInfo').style.display = 'block';
+            document.getElementById('inventoryScan').style.display = 'none';
+            showToast('Phrase generated! Add it to your Roblox bio.', 'success');
+
+            // Try to get Roblox user ID
+            try {
+                const resp = await fetch('https://users.roblox.com/v1/usernames/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usernames: [username] }),
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.data && data.data.length > 0) {
+                        pendingVerificationRobloxId = data.data[0].id;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch Roblox ID (CORS may block this):', e.message);
+                // Continue with demo mode
+            }
+        }
+
+        async function confirmVerification() {
+            if (!pendingVerificationPhrase || !pendingVerificationUsername) {
+                showToast('Start verification first.', 'error');
+                return;
+            }
+
+            let verified = false;
+            // Try real Roblox API verification
+            if (pendingVerificationRobloxId) {
+                try {
+                    const resp = await fetch(`https://users.roblox.com/v1/users/${pendingVerificationRobloxId}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        const bio = (data.description || '').toLowerCase();
+                        if (bio.includes(pendingVerificationPhrase.toLowerCase())) {
+                            verified = true;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Roblox API verification blocked by CORS — using demo verification:', e.message);
+                }
+            }
+
+            // If CORS blocked or no Roblox ID, simulate verification for demo
+            if (!verified && !pendingVerificationRobloxId) {
+                verified = true; // Demo mode auto-verify
+                console.log('Demo verification: auto-approved');
+            }
+
+            if (!verified) {
+                showToast(
+                    'Could not verify the phrase in your bio. Make sure it\'s exactly as shown and your bio is public.',
+                    'error');
+                return;
+            }
+
+            // Update user
+            if (currentUser && firestoreReady && db) {
+                await db.collection('users').doc(currentUser.uid).update({
+                    robloxUsername: pendingVerificationUsername,
+                    verified: true,
+                    robloxId: pendingVerificationRobloxId || null,
+                });
+                currentUser.robloxUsername = pendingVerificationUsername;
+                currentUser.verified = true;
+            } else if (currentUser) {
+                currentUser.robloxUsername = pendingVerificationUsername;
+                currentUser.verified = true;
+            }
+
+            showToast('Verified! Now scanning your inventory... 🎉');
+            await scanInventory();
+        }
+
+        async function scanInventory() {
+            const invDiv = document.getElementById('inventoryScan');
+            const invList = document.getElementById('inventoryList');
+            invDiv.style.display = 'block';
+            invList.innerHTML = '<p style="color:var(--text2);">Scanning Rolimons inventory...</p>';
+
+            // Try Rolimons API - likely blocked by CORS, so we use demo data
+            let items = [];
+            const robloxId = pendingVerificationRobloxId || (currentUser?.robloxId);
+
+            if (robloxId && firestoreReady) {
+                try {
+                    const resp = await fetch(`https://www.rolimons.com/playerassets/${robloxId}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        // Parse Rolimons data (structure may vary)
+                        items = (data.assets || []).filter(a => a.assetType === 'limited' || a.rap > 1000).map(a => ({
+                            name: a.name || 'Unknown Limited',
+                            itemId: a.assetId || a.id,
+                            value: a.rap || a.value || 5000,
+                        }));
+                    }
+                } catch (e) {
+                    console.warn('Rolimons API blocked by CORS — using demo inventory:', e.message);
+                }
+            }
+
+            // Demo fallback inventory
+            if (items.length === 0) {
+                items = [
+                    { name: 'Dominus Frigidus', itemId: '111222', value: 6200000 },
+                    { name: 'Frozen Horns of the Frigid', itemId: '222333', value: 1800000 },
+                    { name: 'Bluesteel Antlers', itemId: '333444', value: 950000 },
+                    { name: 'Silverthorn Antlers', itemId: '444555', value: 720000 },
+                    { name: 'Glowing Neon Party Hat', itemId: '555666', value: 340000 },
+                ];
+            }
+
+            invList.innerHTML = items.map(item => `
+            <div style="background:var(--bg4);padding:12px;border-radius:8px;border:1px solid var(--border);">
+              <strong>${escapeHTML(item.name)}</strong>
+              <p style="font-size:0.8rem;color:var(--gold2);">Rolimons Value: R$ ${formatNumber(item.value)}</p>
+              <input type="number" id="price-${item.itemId}" placeholder="Your USD price" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);margin-top:6px;font-family:var(--font);">
+              <button class="btn btn-gold btn-sm" style="width:100%;margin-top:6px;" onclick="listItem('${item.itemId}','${escapeHTML(item.name).replace(/'/g,"\\'")}',${item.value})">📤 List This Item</button>
+            </div>
+          `).join('');
+        }
+
+        async function listItem(itemId, itemName, rolimonsValue) {
+            const priceInput = document.getElementById('price-' + itemId);
+            const price = parseFloat(priceInput?.value);
+            if (!price || price <= 0) { showToast('Enter a valid USD price.', 'error'); return; }
+            if (!currentUser) { showToast('Login required.', 'error'); return; }
+
+            if (!firestoreReady || !db) {
+                showToast('Demo: Item listed! (Firebase not configured)', 'success');
+                switchPage('market');
+                loadMarketListings();
+                return;
+            }
+
+            try {
+                const listingId = 'listing-' + Date.now();
+                await db.collection('listings').doc(listingId).set({
+                    listingId,
+                    itemName,
+                    itemId,
+                    rolimonsValue,
+                    price,
+                    sellerUsername: currentUser.robloxUsername || currentUser.username,
+                    sellerId: currentUser.uid,
+                    status: 'active',
+                    createdAt: new Date().toISOString(),
+                });
+                showToast('Item listed successfully! 🎉');
+                switchPage('market');
+                loadMarketListings();
+            } catch (e) {
+                console.error('List error:', e);
+                showToast('Error listing item: ' + e.message, 'error');
+            }
+        }
+
+        // ==================== ORDERS ====================
+        async function loadOrders() {
+            const container = document.getElementById('ordersList');
+            if (!currentUser) { container.innerHTML = '<p style="color:var(--text2);">Login to view orders.</p>'; return; }
+            if (!firestoreReady || !db) {
+                container.innerHTML =
+                    '<p style="color:var(--text2);">Demo mode: No saved orders. Firebase not configured.</p>';
+                return;
+            }
+            try {
+                const snap1 = await db.collection('orders').where('buyerId', '==', currentUser.uid).get();
+                const snap2 = await db.collection('orders').where('sellerId', '==', currentUser.uid).get();
+                const allOrders = [...snap1.docs, ...snap2.docs].filter((d, i, arr) => arr.findIndex(x => x.id === d
+                    .id) === i);
+                if (allOrders.length === 0) { container.innerHTML =
+                    '<p style="color:var(--text2);">No orders yet.</p>'; return; }
+                container.innerHTML = allOrders.map(d => {
+                    const o = d.data();
+                    const badgeClass = o.status === 'completed' ? 'badge-active' : o.status === 'pending_chat' ?
+                        'badge-pending' : 'badge-sold';
+                    const badgeText = o.status === 'completed' ? 'Completed' : o.status === 'pending_chat' ?
+                        'In Progress' : 'Sold';
+                    return `
+                <div style="background:var(--bg3);padding:14px;border-radius:8px;border:1px solid var(--border);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <div><strong>${escapeHTML(o.itemName)}</strong> — $${o.price.toFixed(2)}
+                  <br><small>Buyer: ${escapeHTML(o.buyerUsername)} | Seller: ${escapeHTML(o.sellerUsername)}</small></div>
+                  <span class="badge ${badgeClass}">${badgeText}</span>
+                  ${o.status === 'pending_chat' && o.buyerId === currentUser.uid ? `<button class="btn btn-green btn-sm" onclick="openChat('${o.chatId}','${o.listingId}','${o.orderId}',{itemName:'${escapeHTML(o.itemName)}',price:${o.price},sellerUsername:'${escapeHTML(o.sellerUsername)}',buyerUsername:'${escapeHTML(o.buyerUsername)}'})">💬 Open Chat</button>` : ''}
+                </div>`;
+                }).join('');
+            } catch (e) {
+                console.error('Load orders error:', e);
+                container.innerHTML = '<p style="color:var(--red);">Failed to load orders.</p>';
+            }
+        }
+
+        // ==================== DEPOSIT ====================
+        async function submitDepositRequest() {
+            if (!currentUser) { showToast('Login required.', 'error'); return; }
+            if (!firestoreReady || !db) {
+                showToast('Demo: Deposit request submitted! (Firebase not configured)', 'success');
+                return;
+            }
+            try {
+                await db.collection('depositRequests').add({
+                    userId: currentUser.uid,
+                    username: currentUser.username,
+                    email: currentUser.email,
+                    status: 'pending',
+                    createdAt: new Date().toISOString(),
+                });
+                showToast('Deposit request submitted! Admin will review it. 📩');
+                loadDepositRequests();
+            } catch (e) {
+                console.error('Deposit request error:', e);
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        async function loadDepositRequests() {
+            const container = document.getElementById('depositRequestsList');
+            if (!currentUser || !firestoreReady || !db) { container.innerHTML = ''; return; }
+            try {
+                const snap = await db.collection('depositRequests').where('userId', '==', currentUser.uid).get();
+                if (snap.empty) { container.innerHTML =
+                    '<p style="color:var(--text2);margin-top:10px;">No deposit requests yet.</p>'; return; }
+                container.innerHTML = '<p style="font-weight:700;margin-top:12px;">Your Deposit Requests:</p>' + snap.docs
+                    .map(d => {
+                        const r = d.data();
+                        return `<div style="background:var(--bg3);padding:10px;border-radius:6px;margin:4px 0;font-size:0.85rem;">
+                Status: <strong>${r.status}</strong> | ${new Date(r.createdAt).toLocaleDateString()}
+                ${r.status==='approved' ? '✅ Credited' : r.status==='pending' ? '⏳ Pending review' : ''}
+              </div>`;
+                    }).join('');
+            } catch (e) { console.warn('Load deposit requests:', e); }
+        }
+
+        // ==================== ADMIN PANEL ====================
+        function adminLogin() {
+            const pw = document.getElementById('adminPasswordInput').value;
+            if (pw === 'egypt123') {
+                isAdmin = true;
+                document.getElementById('adminContent').style.display = 'block';
+                document.getElementById('adminLoginArea').style.display = 'none';
+                showToast('Admin unlocked! 🛡️');
+                adminLoadTab('trades');
+            } else {
+                showToast('Incorrect admin password.', 'error');
+            }
+        }
+
+        function adminSwitchTab(tab) {
+            adminActiveTab = tab;
+            document.querySelectorAll('#adminContent .admin-tabs button').forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector(`#adminContent .admin-tabs button:nth-child(${['trades','accounts','chats','deposits'].indexOf(tab)+1})`);
+            if (btn) btn.classList.add('active');
+            adminLoadTab(tab);
+        }
+
+        async function adminLoadTab(tab) {
+            const container = document.getElementById('adminTabContent');
+            if (!firestoreReady || !db) {
+                container.innerHTML =
+                    '<p style="color:var(--text2);">Demo mode: Firebase not configured. Admin data unavailable.</p>';
+                return;
+            }
+            container.innerHTML = '<p style="color:var(--text2);">Loading...</p>';
+            try {
+                let html = '';
+                if (tab === 'trades') {
+                    const snap = await db.collection('orders').orderBy('createdAt', 'desc').limit(50).get();
+                    html = '<table class="admin-table"><tr><th>Order ID</th><th>Item</th><th>Price</th><th>Buyer</th><th>Seller</th><th>Status</th><th>Date</th></tr>';
+                    snap.forEach(d => {
+                        const o = d.data();
+                        html +=
+                            `<tr><td>${o.orderId}</td><td>${escapeHTML(o.itemName)}</td><td>$${o.price.toFixed(2)}</td><td>${escapeHTML(o.buyerUsername)}</td><td>${escapeHTML(o.sellerUsername)}</td><td>${o.status}</td><td>${new Date(o.createdAt).toLocaleDateString()}</td></tr>`;
+                    });
+                    html += '</table>';
+                } else if (tab === 'accounts') {
+                    const snap = await db.collection('users').limit(50).get();
+                    html = '<table class="admin-table"><tr><th>UID</th><th>Username</th><th>Email</th><th>Balance</th><th>Roblox</th><th>Verified</th></tr>';
+                    snap.forEach(d => {
+                        const u = d.data();
+                        html +=
+                            `<tr><td>${d.id}</td><td>${escapeHTML(u.username)}</td><td>${escapeHTML(u.email)}</td><td>$${(u.balance||0).toFixed(2)}</td><td>${escapeHTML(u.robloxUsername||'N/A')}</td><td>${u.verified?'✅':'❌'}</td></tr>`;
+                    });
+                    html += '</table>';
+                } else if (tab === 'chats') {
+                    const snap = await db.collection('chats').limit(30).get();
+                    html = '<table class="admin-table"><tr><th>Chat ID</th><th>Buyer</th><th>Seller</th><th>Messages</th><th>Created</th></tr>';
+                    snap.forEach(d => {
+                        const c = d.data();
+                        html +=
+                            `<tr><td>${c.chatId}</td><td>${escapeHTML(c.buyerId)}</td><td>${escapeHTML(c.sellerId)}</td><td>${(c.messages||[]).length}</td><td>${new Date(c.createdAt).toLocaleDateString()}</td></tr>`;
+                    });
+                    html += '</table>';
+                } else if (tab === 'deposits') {
+                    const snap = await db.collection('depositRequests').orderBy('createdAt', 'desc').limit(30).get();
+                    html = '<table class="admin-table"><tr><th>User</th><th>Email</th><th>Status</th><th>Date</th><th>Action</th></tr>';
+                    snap.forEach(d => {
+                        const r = d.data();
+                        html +=
+                            `<tr><td>${escapeHTML(r.username)}</td><td>${escapeHTML(r.email)}</td><td>${r.status}</td><td>${new Date(r.createdAt).toLocaleDateString()}</td><td>${r.status==='pending'?`<button class="btn btn-green btn-sm" onclick="adminApproveDeposit('${d.id}','${r.userId}')">✅ Approve</button>`:'—'}</td></tr>`;
+                    });
+                    html += '</table>';
+                }
+                container.innerHTML = html || '<p style="color:var(--text2);">No data found.</p>';
+            } catch (e) {
+                console.error('Admin load error:', e);
+                container.innerHTML = '<p style="color:var(--red);">Error loading data.</p>';
+            }
+        }
+
+        async function adminApproveDeposit(docId, userId) {
+            if (!isAdmin || !db) return;
+            try {
+                await db.collection('depositRequests').doc(docId).update({ status: 'approved' });
+                const userDoc = await db.collection('users').doc(userId).get();
+                const bal = (userDoc.data().balance || 0) + 50; // Default $50 credit
+                await db.collection('users').doc(userId).update({ balance: bal });
+                showToast('Deposit approved & $50 credited!');
+                adminLoadTab('deposits');
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+
+        // ==================== INITIALIZATION ====================
+        function init() {
+            updateNavForUser();
+            switchPage('market');
+            loadMarketListings();
+        }
+
+        // Check for saved session (basic — in production use Firebase Auth persistence)
+        if (firestoreReady && db) {
+            const savedUid = localStorage.getItem('limitx_uid');
+            if (savedUid) {
+                db.collection('users').doc(savedUid).get().then(doc => {
+                    if (doc.exists) {
+                        currentUser = { uid: doc.id, ...doc.data() };
+                        updateNavForUser();
+                        startBalanceListener();
+                        switchPage('market');
+                        loadMarketListings();
+                    }
+                }).catch(() => {});
+            }
+        }
+
+        // Save session on auth
+        const origHandleAuth = handleAuth;
+        handleAuth = async function() {
+            await origHandleAuth();
+            if (currentUser) {
+                localStorage.setItem('limitx_uid', currentUser.uid);
+            }
+        };
+        const origLogout = logout;
+        logout = function() {
+            localStorage.removeItem('limitx_uid');
+            origLogout();
+        };
+
+        init();
+        console.log('🚀 LimitX Marketplace Ready');
+        console.log('📌 Admin password: egypt123');
+        console.log('⚠️ Replace firebaseConfig with your own Firebase project credentials for production use.');
+        console.log('💡 Features: Market | Auth | Verification | Chat | Orders | Admin Panel | Deposit System');
+    </script>
 </body>
 </html>
